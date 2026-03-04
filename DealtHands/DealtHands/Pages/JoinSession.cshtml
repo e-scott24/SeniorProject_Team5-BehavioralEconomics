@@ -16,12 +16,16 @@
                         <div class="mb-4">
                             <label class="form-label">Session Code</label>
                             <input type="text" class="form-control form-control-lg text-center"
-                                   placeholder="12345" maxlength="5" style="font-size: 2em; letter-spacing: 0.5em;">
+                                   asp-for="SessionCode"
+                                   placeholder="12345" maxlength="5" 
+                                   style="font-size: 2em; letter-spacing: 0.5em;">
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label">Your Name</label>
-                            <input type="text" class="form-control" placeholder="Enter your name">
+                            <input type="text" class="form-control" 
+                                   asp-for="PlayerName"
+                                   placeholder="Enter your name">
                         </div>
 
                         <div class="d-grid">

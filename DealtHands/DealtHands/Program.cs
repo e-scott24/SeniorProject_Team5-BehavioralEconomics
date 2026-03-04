@@ -1,7 +1,19 @@
+using DealtHands.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+// Register services
+builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<PlayerService>();
+builder.Services.AddScoped<GameEngine>();
+builder.Services.AddScoped<FinancialCalculator>();
+builder.Services.AddScoped<GameChangerService>();
+//builder.Services.AddScoped<AIPricingService>();
+
+
 
 var app = builder.Build();
 
