@@ -1,0 +1,12 @@
+[
+  {
+    "ContainingType": "FinancialsController",
+    "Method": "Get",
+    "RelativePath": "api/Financials",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]
