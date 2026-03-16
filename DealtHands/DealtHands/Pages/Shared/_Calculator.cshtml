@@ -1,0 +1,971 @@
+﻿@*  Name: Jason Black
+    Date: 2/23/2026
+    Last Update: 3/16/2026
+
+    Dave Ramsey zero-based budget calculator — markup, CSS, and mobile behavior.
+    All budget logic exists in calculator.js. Layout and navigation are in _Layout.cshtml.
+
+
+    Calculator logic is in calculator.js.
+    All markup/CSS is in _Calculator.cshtml. 
+    Refer to FinancialsController.cs for the APIs. 
+    Layout and open/close logic are in _Layout.cshtml.
+    Program.cs was altered to support API controllers, session, and distributed memory cache.
+    All icons are from https://heroicons.com/.
+
+    The correct file paths are the following:
+    ...\DealtHands\DealtHands\wwwroot\js\calculator.js
+    ...\DealtHands\DealtHands\Pages\Shared\_Calculator.cshtml
+    ...\DealtHands\DealtHands\Controllers\FinancialsController.cs
+    ...\DealtHands\DealtHands\Pages\Shared\_Layout.cshtml
+    ...\DealtHands\DealtHands\Program.cs
+
+
+    Difficulty levels:
+    Easy:   Take-Home Pay / Student Loans, Car, House, Family, Food, Consumer Debt, Entertainment, Other/Misc, Savings
+    Medium: TBA — define MEDIUM_INCOME and MEDIUM_EXPENSES in calculator.js
+    Hard:   TBA — define HARD_INCOME and HARD_EXPENSES in calculator.js
+
+*@
+
+@* Overlay backdrop toggled by openCalculator() / closeCalculator() in _Layout.cshtml *@
+<div id="calc-model"
+     style="display:none;position:fixed;inset:0;z-index:9999;
+            background:rgba(10,18,40,.7);backdrop-filter:blur(4px);
+            -webkit-backdrop-filter:blur(4px);
+            align-items:center;justify-content:center;padding:1rem;">
+
+    <div id="calc-model-box" class="calc-model-box">
+
+        <button onclick="closeCalculator()" class="calc-close-btn" title="Close (Esc)">✕</button>
+
+        <div class="calc-header">
+            <h1 class="calc-title">Budget Calculator</h1>
+        </div>
+
+        <div class="calc-page-wrap">
+
+            @* .calc-intro-detail paragraph hidden on mobile via CSS and only the h2 shows *@
+            <div class="calc-intro">
+                <div>
+                    <h2>Every dollar has a job.</h2>
+                    <p class="calc-intro-detail">
+                        Dave Ramsey's zero-based budgeting means
+                        <strong>Income − Expenses = $0.00</strong>.
+                        Assign every dollar a purpose until nothing is left unaccounted for.
+                        The calculator and chart update live as you type.
+                    </p>
+                </div>
+            </div>
+
+            @* Balance and debt are read-only — populated by updateStrip() in calculator.js after /api/financials resolves. *@
+            <div class="calc-top-strip">
+
+                <div class="calc-strip-card calc-strip-balance">
+                    <div class="calc-strip-label">Current Balance</div>
+                    <div class="calc-strip-sub">Pulled from your account</div>
+                    <div class="calc-strip-amount calc-loading" id="c-balance-display">—</div>
+                </div>
+
+                <div class="calc-strip-card calc-strip-debt">
+                    <div class="calc-strip-label">Total Debt</div>
+                    <div class="calc-strip-sub">All outstanding balances you owe</div>
+                    <div class="calc-strip-amount calc-loading" id="c-debt-display">—</div>
+                </div>
+
+            </div>
+
+            <div class="calc-left-col">
+
+                @* Income fields injected here by buildIncomeFields() in calculator.js.
+                   To add a new source, add an entry to the active difficulty's INCOME array. *@
+                <div class="calc-card" style="margin-bottom:1.25rem">
+                    <div class="calc-card-header"><h2>Monthly Income</h2></div>
+                    <div class="calc-card-body" id="c-income-fields"></div>
+                </div>
+
+                @* Expense fields injected here by buildExpenseFields() in calculator.js.
+                   To add a category, add an entry to the active difficulty's EXPENSES array. *@
+                <div class="calc-card">
+                    <div class="calc-card-header"><h2>Monthly Expenses</h2></div>
+                    <div class="calc-expenses-scroll">
+                        <div class="calc-card-body" id="c-expense-fields"></div>
+                        <div class="calc-scroll-fade" aria-hidden="true"></div>
+                    </div>
+                </div>
+
+                <div class="calc-btn-row">
+                    <button class="calc-btn calc-btn-reset" id="c-btn-reset">↺ Reset All</button>
+                </div>
+
+            </div>
+
+            @* Sticky right column on desktop that collapses behind a toggle button on mobile *@
+            <div class="calc-summary-col">
+
+                @* Mobile only — tapping toggles aria-expanded and CSS does the rest (show/hide card + rotate chevron) *@
+                <button class="calc-snapshot-toggle" id="c-snapshot-toggle"
+                        aria-expanded="false" aria-controls="c-snapshot-card">
+                    <span>Budget Snapshot</span>
+                    <span class="calc-snapshot-chevron">▲</span>
+                </button>
+
+                <div class="calc-card" id="c-snapshot-card">
+                    <div class="calc-card-header"><h2>Budget Snapshot</h2></div>
+                    <div class="calc-card-body">
+
+                        @* SVG donut with segments drawn by drawDonut() in calculator.js *@
+                        <div class="calc-donut-wrap">
+                            <svg id="c-donut" viewBox="0 0 160 160"
+                                 style="width:100%;max-width:160px;height:auto;display:block;margin:0 auto">
+                                @* Static gray ring is the background track and JS layers colored segments on top *@
+                                <circle cx="80" cy="80" r="60" fill="none" stroke="#e2e8f0" stroke-width="22" />
+                                <text x="80" y="74" text-anchor="middle"
+                                      font-family="Georgia,serif" font-size="10"
+                                      fill="#94a3b8" font-weight="700">TOTAL</text>
+                                <text id="c-donut-total" x="80" y="93" text-anchor="middle"
+                                      font-family="sans-serif" font-size="14"
+                                      fill="#1e3a5f" font-weight="700">$0.00</text>
+                            </svg>
+                        </div>
+
+                        @* Category breakdown rows built by renderSummary() in calculator.js *@
+                        <div id="c-summary-rows"></div>
+
+                        <div class="calc-divider"></div>
+
+                        <div class="calc-income-row">
+                            <span style="color:var(--calc-muted)">Monthly Income</span>
+                            <span id="c-sum-income" style="font-weight:700;color:var(--calc-blue)">$0.00</span>
+                        </div>
+
+                        <div class="calc-diff-row" id="c-diff-row" style="margin-top:.6rem">
+                            <span>Difference</span>
+                            <span id="c-diff-val">$0.00</span>
+                        </div>
+
+                        <div class="calc-alert calc-alert-warn" id="c-alert-surplus">
+                            <span></span><span>You have unallocated dollars — assign them!</span>
+                        </div>
+                        <div class="calc-alert calc-alert-danger" id="c-alert-over">
+                            <span></span><span>You're spending more than you earn!</span>
+                        </div>
+                        <div class="calc-alert calc-alert-info" id="c-alert-balanced">
+                            <span></span><span>Perfect zero-based budget!</span>
+                        </div>
+
+                        @* Progress bar with savings field prefilled from session. The target is $1,000. *@
+                        <div style="margin-top:1rem">
+                            <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem">
+                                <span style="color:var(--calc-muted);font-weight:500">Emergency Fund Progress</span>
+                                <span style="color:var(--calc-navy);font-weight:600">Goal: $1,000</span>
+                            </div>
+                            <div class="calc-ef-track">
+                                <div class="calc-ef-fill" id="c-ef-bar"></div>
+                            </div>
+                            <div class="calc-ef-label" id="c-ef-label">$0.00 / $1,000.00</div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    #calc-model {
+        --calc-blue: #2563eb;
+        --calc-blue-dark: #1d4ed8;
+        --calc-blue-soft: #eff6ff;
+        --calc-navy: #1e3a5f;
+        --calc-ink: #1e293b;
+        --calc-gold: #f59e0b;
+        --calc-gold-soft: #fefce8;
+        --calc-coral: #ef4444;
+        --calc-coral-soft: #fef2f2;
+        --calc-green: #16a34a;
+        --calc-green-soft: #f0fdf4;
+        --calc-cream: #f8fafc;
+        --calc-muted: #64748b;
+        --calc-card: #ffffff;
+        --calc-border: #e2e8f0;
+        --calc-radius: 12px;
+        --calc-shadow: 0 2px 16px rgba(30,58,95,.08);
+    }
+
+    /* overflow:clip keeps header corners clean without creating a scroll context —
+           scrolling is owned by .calc-page-wrap instead */
+    .calc-model-box {
+        background: var(--calc-cream);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 1000px;
+        max-height: 92dvh;
+        overflow: clip;
+        box-shadow: 0 24px 64px rgba(10,18,40,.3), 0 0 0 1px rgba(255,255,255,.1);
+        position: relative;
+        animation: calcPopIn .25s cubic-bezier(.34,1.56,.64,1) both;
+        font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+        color: var(--calc-ink);
+    }
+
+        .calc-model-box.calc-closing {
+            animation: calcPopOut .18s ease forwards;
+        }
+
+    @@keyframes calcPopIn {
+        from {
+            opacity: 0;
+            transform: scale(.93) translateY(16px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @@keyframes calcPopOut {
+        from {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        to {
+            opacity: 0;
+            transform: scale(.95) translateY(8px);
+        }
+    }
+
+    /* Nudged in from the corner so that it sits cleanly inside the modal's border-radius */
+    .calc-close-btn {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        z-index: 10;
+        background: rgba(255,255,255,.95);
+        border: 1.5px solid var(--calc-border);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 1px 6px rgba(0,0,0,.12);
+        transition: background .15s, box-shadow .15s, transform .15s;
+        color: var(--calc-navy);
+        line-height: 1;
+    }
+
+        .calc-close-btn:hover {
+            background: #fff;
+            transform: scale(1.08);
+            box-shadow: 0 3px 12px rgba(0,0,0,.18);
+        }
+
+    .calc-header {
+        background: var(--calc-blue);
+        padding: 0 3.5rem 0 1.5rem; /* right padding keeps title clear from the close button */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 60px;
+        box-shadow: 0 2px 8px rgba(37,99,235,.2);
+    }
+
+    .calc-title {
+        font-size: 1.2rem;
+        color: #fff;
+        font-weight: 700;
+        margin: 0;
+        text-align: center;
+        width: 100%;
+        letter-spacing: .01em;
+    }
+
+    /* Scrolling is handled here */
+    .calc-page-wrap {
+        overflow-y: auto;
+        max-height: calc(92dvh - 60px);
+        scrollbar-width: thin;
+        scrollbar-color: var(--calc-border) transparent;
+        padding: 1.75rem 1.25rem 2.5rem;
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    @@media (max-width: 740px) {
+        .calc-page-wrap {
+            grid-template-columns: 1fr;
+            max-height: calc(92dvh - 60px);
+            padding: 1rem .75rem 2rem;
+            gap: .85rem;
+        }
+    }
+
+    .calc-top-strip {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @@media (max-width: 480px) {
+        .calc-top-strip {
+            grid-template-columns: 1fr;
+            gap: .6rem;
+        }
+    }
+
+    .calc-intro {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        background: var(--calc-navy);
+        border-radius: var(--calc-radius);
+        padding: 1.1rem 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+        .calc-intro h2 {
+            font-size: 1rem;
+            color: #fff;
+            font-weight: 700;
+            margin: 0 0 .25rem;
+        }
+
+        .calc-intro p {
+            color: #94a3b8;
+            font-size: .78rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .calc-intro strong {
+            color: var(--calc-gold);
+        }
+
+    @@media (max-width: 740px) {
+        .calc-intro {
+            padding: .8rem 1rem;
+        }
+        /* Hidden on mobile */
+        .calc-intro-detail {
+            display: none;
+        }
+
+        .calc-intro h2 {
+            margin: 0;
+            font-size: .95rem;
+        }
+    }
+
+    .calc-strip-card {
+        border-radius: var(--calc-radius);
+        border: 1.5px solid var(--calc-border);
+        padding: .9rem 1.15rem 1rem;
+        background: var(--calc-card);
+        box-shadow: var(--calc-shadow);
+    }
+
+    .calc-strip-label {
+        font-size: .78rem;
+        font-weight: 700;
+        color: var(--calc-navy);
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .calc-strip-sub {
+        font-size: .68rem;
+        color: var(--calc-muted);
+        margin-top: 2px;
+    }
+
+    .calc-strip-amount {
+        font-size: 1.45rem;
+        font-weight: 800;
+        margin-top: .55rem;
+        letter-spacing: -.02em;
+    }
+
+    .calc-strip-balance {
+        border-top: 3px solid var(--calc-blue);
+    }
+
+        .calc-strip-balance .calc-strip-amount {
+            color: var(--calc-blue);
+        }
+
+    .calc-strip-debt {
+        border-top: 3px solid var(--calc-coral);
+    }
+
+        .calc-strip-debt .calc-strip-amount {
+            color: var(--calc-coral);
+        }
+
+    /* Applied by updateStrip() in calculator.js once API data arrives */
+    .calc-strip-amount.calc-value-danger {
+        color: var(--calc-coral) !important;
+    }
+
+    .calc-strip-amount.calc-value-warn {
+        color: var(--calc-gold) !important;
+    }
+
+    /* Pulses on the strip amounts until /api/financials resolves */
+    .calc-loading {
+        color: var(--calc-border) !important;
+        animation: calcSkeleton 1.4s ease-in-out infinite;
+        border-radius: 4px;
+        user-select: none;
+    }
+
+    @@keyframes calcSkeleton {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .35;
+        }
+    }
+
+    /* Explicit grid placement */
+    .calc-left-col {
+        grid-column: 1;
+        grid-row: 3;
+        min-width: 0; /* prevents grid blowout when content is wide */
+    }
+
+    .calc-summary-col {
+        grid-column: 2;
+        grid-row: 3;
+        position: sticky;
+        top: 0;
+        min-width: 0;
+    }
+
+    /* Mobile snapshot moves above expenses so the player sees the chart without scrolling past all inputs */
+    @@media (max-width: 740px) {
+        .calc-left-col {
+            grid-column: 1;
+            grid-row: 4;
+        }
+
+        .calc-summary-col {
+            grid-column: 1;
+            grid-row: 3;
+            position: static;
+        }
+    }
+
+    .calc-card {
+        background: var(--calc-card);
+        border-radius: var(--calc-radius);
+        box-shadow: var(--calc-shadow);
+        border: 1.5px solid var(--calc-border);
+        overflow: hidden;
+    }
+
+    .calc-card-header {
+        padding: .9rem 1.25rem;
+        border-bottom: 1.5px solid var(--calc-border);
+        display: flex;
+        align-items: center;
+        background: var(--calc-card);
+    }
+
+        .calc-card-header h2 {
+            font-size: .95rem;
+            font-weight: 700;
+            color: var(--calc-navy);
+            margin: 0;
+            letter-spacing: .01em;
+        }
+
+    .calc-card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    /*  No internal scroll — the outer .calc-page-wrap scrolls the model.
+        This keeps expenses in the same scroll context as income so there's
+        no nested scrollbar pushing content left and misaligning the inputs. */
+    .calc-expenses-scroll {
+        position: relative;
+    }
+
+    /* Fade hint removed so there's no internal scroll to hint about */
+    .calc-scroll-fade {
+        display: none;
+    }
+
+    .calc-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .65rem 0;
+        border-bottom: 1px solid var(--calc-border);
+    }
+
+        .calc-field:last-child {
+            border-bottom: none;
+        }
+
+    .calc-field-input-wrap {
+        flex-shrink: 0;
+    }
+
+    /* In mobile the stack label is above input so neither gets squeezed */
+    @@media (max-width: 740px) {
+        .calc-field {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: .4rem;
+        }
+
+        .calc-field-input-wrap {
+            width: 100%;
+        }
+
+        .calc-input-wrap {
+            width: 100% !important;
+        }
+
+        .calc-field-err {
+            text-align: left !important;
+        }
+    }
+
+    .calc-field-label {
+        font-size: .85rem;
+        font-weight: 500;
+        color: var(--calc-ink);
+        flex: 1;
+    }
+
+        .calc-field-label small {
+            display: block;
+            font-size: .68rem;
+            color: var(--calc-muted);
+            font-weight: 400;
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+    .calc-rec-badge {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: .64rem;
+        font-weight: 600;
+        color: var(--calc-blue);
+        background: var(--calc-blue-soft);
+        border: 1px solid #bfdbfe;
+        border-radius: 4px;
+        padding: 1px 5px;
+        vertical-align: middle;
+    }
+
+    /* Fixed width shared by all inputs */
+    .calc-input-wrap {
+        position: relative;
+        width: 160px;
+        flex-shrink: 0;
+    }
+
+    .calc-dollar {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--calc-muted);
+        font-size: .85rem;
+        pointer-events: none;
+    }
+
+    .calc-input-wrap input {
+        width: 100%;
+        padding: .5rem .65rem .5rem 1.55rem;
+        border: 1.5px solid var(--calc-border);
+        border-radius: 8px;
+        font-family: inherit;
+        font-weight: 500;
+        color: var(--calc-navy);
+        background: var(--calc-cream);
+        transition: border-color .18s, box-shadow .18s;
+        outline: none;
+        /*  max() keeps the rendered size at 16px+ on mobile so iOS doesn't
+            auto-zoom the viewport when the input is focused */
+        font-size: max(.875rem, 16px);
+        /* Hides spinner arrows for mobile */
+        -moz-appearance: textfield;
+    }
+
+        .calc-input-wrap input::-webkit-inner-spin-button,
+        .calc-input-wrap input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .calc-input-wrap input:focus {
+            border-color: var(--calc-blue);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+            background: #fff;
+        }
+
+        /* Yellow border = recommended percentage exceeded */
+        .calc-input-wrap input.calc-warning {
+            border-color: var(--calc-gold);
+        }
+
+        /* Red border = hard minimum not met */
+        .calc-input-wrap input.calc-error {
+            border-color: var(--calc-coral);
+        }
+
+    .calc-field-err {
+        font-size: .68rem;
+        color: #b45309;
+        font-weight: 500;
+        margin-top: 3px;
+        text-align: right;
+        min-height: .85em;
+        display: none;
+    }
+
+        .calc-field-err.visible {
+            display: block;
+        }
+
+    .calc-tip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background: var(--calc-blue-soft);
+        color: var(--calc-blue);
+        border: 1px solid #bfdbfe;
+        border-radius: 50%;
+        font-size: .6rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-left: 4px;
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+        transition: background .15s;
+    }
+
+        .calc-tip:hover {
+            background: #dbeafe;
+        }
+
+            .calc-tip:hover .calc-tip-text,
+            .calc-tip.open .calc-tip-text {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(0);
+            }
+
+    .calc-field:first-child .calc-tip-text {
+        bottom: auto;
+        top: calc(100% + 7px);
+        transform: translateY(5px);
+    }
+
+    .calc-field:first-child .calc-tip:hover .calc-tip-text,
+    .calc-field:first-child .calc-tip.open .calc-tip-text {
+        transform: translateY(0);
+    }
+
+    .calc-tip-text {
+        position: absolute;
+        bottom: calc(100% + 7px);
+        left: 0;
+        transform: translateX(min(0px, calc(100vw - 100% - 2rem))) translateY(5px);
+        background: var(--calc-navy);
+        color: #fff;
+        font-size: .7rem;
+        font-weight: 400;
+        line-height: 1.45;
+        padding: .5rem .75rem;
+        border-radius: 8px;
+        width: 210px;
+        text-align: left;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .18s, transform .18s;
+        z-index: 30;
+        box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    }
+
+    /* Desktop only */
+    .calc-snapshot-toggle {
+        display: none;
+    }
+
+    @@media (max-width: 740px) {
+        .calc-snapshot-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: .85rem 1.1rem;
+            background: var(--calc-blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--calc-radius);
+            font-family: inherit;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: .6rem;
+            min-height: 44px;
+            transition: background .15s;
+        }
+
+            .calc-snapshot-toggle:active {
+                background: var(--calc-blue-dark);
+            }
+
+        .calc-snapshot-chevron {
+            font-size: .65rem;
+            transition: transform .22s ease;
+        }
+        /* aria-expanded drives both the chevron rotation and card visibility */
+        .calc-snapshot-toggle[aria-expanded="false"] .calc-snapshot-chevron {
+            transform: rotate(180deg);
+        }
+
+        .calc-snapshot-toggle[aria-expanded="false"] + #c-snapshot-card {
+            display: none;
+        }
+        #c-snapshot-card .calc-card-header {
+            display: none;
+        }
+
+        .calc-card {
+            border-radius: 10px;
+        }
+    }
+
+    .calc-donut-wrap {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.1rem;
+    }
+
+    .calc-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .32rem 0;
+        border-bottom: 1px solid var(--calc-border);
+        font-size: .82rem;
+    }
+
+        .calc-summary-row:last-child {
+            border-bottom: none;
+        }
+
+    .calc-row-label {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        color: var(--calc-ink);
+        flex: 1;
+    }
+
+    .calc-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .calc-row-value {
+        font-weight: 600;
+        color: var(--calc-navy);
+    }
+
+    .calc-divider {
+        height: 1.5px;
+        background: var(--calc-border);
+        margin: .75rem 0;
+    }
+
+    .calc-income-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: .85rem;
+        padding: .3rem 0;
+    }
+
+    .calc-diff-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .1rem .5rem;
+        padding: .75rem 1rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        transition: background .25s, color .25s;
+        background: #f1f5f9;
+        color: var(--calc-muted);
+    }
+
+        .calc-diff-row span:first-child {
+            font-size: .78rem;
+            font-weight: 500;
+            opacity: .75;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        /* Value never shrinks or wraps mid-number */
+        .calc-diff-row span:last-child {
+            white-space: nowrap;
+        }
+
+        .calc-diff-row.balanced {
+            background: var(--calc-green-soft);
+            color: var(--calc-green);
+        }
+
+        .calc-diff-row.surplus {
+            background: var(--calc-gold-soft);
+            color: #92400e;
+        }
+
+        .calc-diff-row.overspent {
+            background: var(--calc-coral-soft);
+            color: var(--calc-coral);
+        }
+
+    /* Alert sits directly under the diff row */
+    .calc-alert {
+        display: none;
+        align-items: center;
+        gap: .4rem;
+        padding: .4rem .75rem;
+        border-radius: 6px;
+        font-size: .72rem;
+        font-weight: 500;
+        line-height: 1.4;
+        margin-top: .35rem;
+    }
+
+        .calc-alert.visible {
+            display: flex;
+        }
+
+    .calc-alert-info {
+        background: var(--calc-green-soft);
+        color: #166534;
+    }
+
+    .calc-alert-warn {
+        background: var(--calc-gold-soft);
+        color: #92400e;
+    }
+
+    .calc-alert-danger {
+        background: var(--calc-coral-soft);
+        color: #991b1b;
+    }
+
+    .calc-ef-track {
+        background: #e2e8f0;
+        border-radius: 999px;
+        height: 7px;
+        overflow: hidden;
+    }
+
+    .calc-ef-fill {
+        height: 100%;
+        background: var(--calc-blue);
+        border-radius: 999px;
+        width: 0%;
+        transition: width .45s ease;
+    }
+
+    .calc-ef-label {
+        font-size: .7rem;
+        color: var(--calc-muted);
+        margin-top: .3rem;
+        text-align: right;
+    }
+
+    .calc-btn-row {
+        display: flex;
+        gap: .75rem;
+        margin-top: 1rem;
+    }
+
+    .calc-btn {
+        padding: .55rem 1.2rem;
+        border-radius: 8px;
+        border: 1.5px solid var(--calc-border);
+        background: #fff;
+        color: var(--calc-muted);
+        font-family: inherit;
+        font-size: .84rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color .15s, color .15s, box-shadow .15s, transform .12s;
+        min-height: 44px;
+    }
+
+        .calc-btn:hover {
+            border-color: var(--calc-blue);
+            color: var(--calc-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(37,99,235,.12);
+        }
+
+    @@media (max-width: 740px) {
+        .calc-btn-row {
+            margin-top: .75rem;
+        }
+
+        .calc-btn-reset {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+@*
+    Handles mobile viewing
+    Tooltip tap-to-toggle - clicking a .calc-tip badge toggles .open on that badge (and closes any others)
+    Snapshot drawer - clicking the toggle flips aria-expanded
+*@
+<script>
+    document.addEventListener("click", function (e) {
+        var tip = e.target.closest(".calc-tip");
+        document.querySelectorAll(".calc-tip.open").forEach(function (t) {
+            if (t !== tip) t.classList.remove("open");
+        });
+        if (tip) tip.classList.toggle("open");
+    });
+
+    var snapshotToggle = document.getElementById("c-snapshot-toggle");
+    if (snapshotToggle) {
+        snapshotToggle.addEventListener("click", function () {
+            var expanded = this.getAttribute("aria-expanded") === "true";
+            this.setAttribute("aria-expanded", String(!expanded));
+        });
+    }
+</script>

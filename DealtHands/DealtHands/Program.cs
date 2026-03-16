@@ -14,6 +14,11 @@ builder.Services.AddScoped<GameChangerService>();
 //builder.Services.AddScoped<AIPricingService>();
 
 
+//for calculator
+builder.Services.AddControllers();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
+
 
 var app = builder.Build();
 
@@ -28,6 +33,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
+app.UseSession(); // calculator
 
 app.UseAuthorization();
 
@@ -35,4 +41,5 @@ app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();
 
+app.MapControllers(); // calculator
 app.Run();
