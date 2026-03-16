@@ -5,16 +5,20 @@
 }
 
 <div class="container mt-4">
+    <!-- Financial Status Header -->
     <div class="alert alert-info">
         <div class="row text-center">
             <div class="col-md-3">
-                <strong>Monthly Income:</strong> $3,500
+                <strong>Salary:</strong> $@((Model.Player?.Salary ?? 0).ToString("N0"))
             </div>
             <div class="col-md-3">
-                <strong>After Loans:</strong> $3,115
+                <strong>Monthly:</strong> $@((Model.Player?.MonthlyIncome ?? 0).ToString("N0"))
             </div>
             <div class="col-md-3">
-                <strong>Financial Health:</strong> Healthy
+                <strong>Available:</strong> $@(((Model.Player?.MonthlyIncome ?? 0) - (Model.Player?.MonthlyExpenses ?? 0)).ToString("N0"))
+            </div>
+            <div class="col-md-3">
+                <strong>Financial Health:</strong> @(Model.Player?.FinancialHealth ?? "Healthy")
             </div>
             <div class="col-md-3">
                 <strong>Round:</strong> 3 of 5

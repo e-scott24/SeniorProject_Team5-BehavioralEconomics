@@ -3,6 +3,23 @@ async function updatePlayers() {
     const sessionCode = document.getElementById('sessionCode').value;
 
     try {
+        // Check if game started
+        const checkResponse = await fetch(`/Lobby?handler=CheckGameStarted&sessionCode=${sessionCode}`);
+        const started = await checkResponse.json();
+
+        if (started) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const playerId = urlParams.get('playerId');
+
+            // Only redirect students (those with playerId)
+            if (playerId) {
+                window.location.href = `/Round1Career?playerId=${playerId}`;
+            }
+            // Educator stays on lobby page
+            return;
+        }
+
+        // Update player list
         const response = await fetch(`/Lobby?handler=GetPlayers&sessionCode=${sessionCode}`);
         const players = await response.json();
 

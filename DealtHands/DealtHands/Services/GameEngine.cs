@@ -17,7 +17,7 @@ namespace DealtHands.Services
         /// Record a player's choice in a round
         /// </summary>
         public void RecordChoice(int playerId, int roundNumber, string roundType,
-                                  string choiceDescription, decimal monthlyCost, decimal? totalPrice = null)
+                                  string choiceDescription, decimal monthlyCost, decimal? totalPrice = null, decimal? annualSalary = null)
         {
             var player = _playerService.GetPlayer(playerId);
             if (player == null) return;
@@ -43,6 +43,7 @@ namespace DealtHands.Services
             if (roundNumber == 1 && totalPrice.HasValue)
             {
                 player.MonthlyIncome = totalPrice.Value; // Career sets monthly income
+                player.Salary = annualSalary ?? 0; // Store annual salary for reference
             }
 
             // Recalculate financial health

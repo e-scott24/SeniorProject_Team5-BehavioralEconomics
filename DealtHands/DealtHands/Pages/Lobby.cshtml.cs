@@ -16,11 +16,10 @@ namespace DealtHands.Pages
             _playerService = playerService;
         }
 
-
         public string SessionCode { get; set; }
         public Session Session { get; set; }
         public List<Player> Players { get; set; }
-        public bool IsEducator { get; set; } // Use this to determine if the current user is the educator (session creator)
+        public bool IsEducator { get; set; }
         public string SessionName { get; set; }
         public string GameMode { get; set; }
         public string Difficulty { get; set; }
@@ -29,41 +28,36 @@ namespace DealtHands.Pages
         public void OnGet(string sessionCode, int? playerId)
         {
             SessionCode = sessionCode;
-            IsEducator = !playerId.HasValue; // If no playerId is provided, we assume the user is the educator (session creator)
+            IsEducator = !playerId.HasValue;
 
-            // Get session details
             Session = _sessionService.GetSessionByCode(sessionCode);
 
             if (Session != null)
             {
-                // Get all players in session
                 Players = _playerService.GetPlayersInSession(Session.Id);
             }
-        } //closing void OnGet()
+        }
 
-        // POST method to start the game
+        // Fixed to redirect educator AND store educator's playerId
         public IActionResult OnPostStartGame(string sessionCode)
         {
             var session = _sessionService.GetSessionByCode(sessionCode);
-            if (session == null)
-            {
-                return RedirectToPage("/CreateSession"); // Session not found
-            }
+            if (session == null) return RedirectToPage("/CreateSession");
 
             // Start the session
             _sessionService.StartSession(session.Id);
 
-            // Redirect the creator to the first round
-            var firstPlayer = Players?.FirstOrDefault();
-            if (firstPlayer == null)
-            {
-                // No players yet, just redirect to lobby again
-                return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
-            }
 
-            return RedirectToPage("/Round", new { playerId = firstPlayer.Id });
-        } // closing IActionResult OnPostStartGame()
+            //Educator stays on lobby, players will be redirected to Round 1 via JS
+            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
 
+            /*
+            // Redirect educator to Round 1 (educator also needs to play)
+            return RedirectToPage("/Round1Career", new { sessionCode = sessionCode });
+            */
+        }
+
+        // API endpoint for fetching players
         public JsonResult OnGetGetPlayers(string sessionCode)
         {
             var session = _sessionService.GetSessionByCode(sessionCode);
@@ -73,5 +67,11 @@ namespace DealtHands.Pages
             return new JsonResult(players.Select(p => new { p.Name, p.Id }));
         }
 
+        // Check if game has started
+        public JsonResult OnGetCheckGameStarted(string sessionCode)
+        {
+            var session = _sessionService.GetSessionByCode(sessionCode);
+            return new JsonResult(session?.IsStarted ?? false);
+        }
     }
 }

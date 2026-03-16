@@ -18,6 +18,8 @@
         public bool IsActive { get; set; }
 
         // ===== FINANCIAL STATE =====
+        // Current yearly salary
+        public decimal Salary { get; set; }
         // Current monthly income
         public decimal MonthlyIncome { get; set; }
 

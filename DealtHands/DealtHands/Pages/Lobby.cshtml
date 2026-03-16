@@ -4,7 +4,6 @@
 @{
 	ViewData["Title"] = "Lobby";
 }
-
 <div class="container mt-4">
 	<input type="hidden" id="sessionCode" value="@Model.SessionCode" />
 	<div class="card shadow">
@@ -23,11 +22,9 @@
 		<div class="card-body">
 			<h4>Waiting for game to start...</h4>
 			<p class="text-muted">Players joined: <span id="playerCount">@Model.Players?.Count</span> / @Model.Session?.MaxPlayers</p>
-
 			<hr class="my-4">
-
 			<h5 class="mb-3">Players in Lobby:</h5>
-			
+
 			<div class="row" id="playerContainer">
 				@foreach (var player in Model.Players ?? new List<Player>())
 				{
@@ -40,80 +37,35 @@
 					</div>
 				}
 			</div>
-			
-			<!-- More players will appear here as they join -->
-			<div class="col-md-2 mb-3">
-				<div class="card bg-light">
-					<div class="card-body text-center py-2">
-						<p class="mb-0 text-muted">Waiting...</p>
-					</div>
-				</div>
-			</div>
-			<div class="col-md-2 mb-3">
-				<div class="card bg-light">
-					<div class="card-body text-center py-2">
-						<p class="mb-0 text-muted">Waiting...</p>
-					</div>
-				</div>
-			</div>
-			<div class="col-md-2 mb-3">
-				<div class="card bg-light">
-					<div class="card-body text-center py-2">
-						<p class="mb-0 text-muted">Waiting...</p>
-					</div>
-				</div>
-			</div>
 		</div>
-
-
 
 		@if (Model.IsEducator)
 		{
 			<div class="alert alert-info mt-4">
-				<strong>Instructions:</strong> Share the session code <strong>@Model.SessionCode</strong> with your students.
+				<strong>Instructions:</strong> Share code <strong>@Model.SessionCode</strong> with students.
 				They can join at <code>/JoinSession</code>
 			</div>
 
-			<div class="d-grid gap-2 mt-4">
-				<button class="btn btn-success btn-lg" disabled>
-					Start Game (Waiting for players...)
-				</button>
-				<button class="btn btn-outline-secondary">
-					Cancel Session
-				</button>
-			</div>
+			<!-- Wrapped in form, removed disabled -->
+			<form method="post">
+				<input type="hidden" name="sessionCode" value="@Model.SessionCode" />
+				<div class="d-grid gap-2 mt-4">
+					<button type="submit" class="btn btn-success btn-lg" asp-page-handler="StartGame">
+						Start Game
+					</button>
+					<button class="btn btn-outline-secondary" type="button">Cancel Session</button>
+				</div>
+			</form>
 		}
 		else
 		{
 			<div class="alert alert-success mt-4">
-				You've joined! Waiting for teacher to start...
+				You've joined! Waiting for educator to start...
 			</div>
 		}
-
-
-
 	</div>
 </div>
-</div>
 
-<style>
-	.card-header h3 {
-		font-size: 1.5rem;
-	}
-
-	media (max-width: 768px) {
-		.card-header .text-end
-
-	{
-		text-align: left !important;
-		margin-top: 10px;
-	}
-
-	}
-</style>
-
-@section Scripts{
+@section Scripts {
 	<script src="~/js/lobby.js"></script>
 }
-
-</div>

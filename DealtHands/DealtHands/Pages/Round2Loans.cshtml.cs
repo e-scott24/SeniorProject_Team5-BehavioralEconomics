@@ -23,20 +23,25 @@ namespace DealtHands.Pages
             Player = _playerService.GetPlayer(playerId);
         }
 
-        public IActionResult OnPostSelectCareer(int playerId, string careerName, decimal salary)
+        
+
+        public IActionResult OnPostSelectLoan(int playerId, string loanDescription, decimal monthlyPayment, decimal totalDebt)
         {
-            // Record the choice
             _gameEngine.RecordChoice(
                 playerId: playerId,
                 roundNumber: 2,
                 roundType: "Loans",
-                choiceDescription: careerName,
-                monthlyCost: 0,
-                totalPrice: salary
+                choiceDescription: loanDescription,
+                monthlyCost: monthlyPayment,
+                totalPrice: totalDebt
             );
 
-            // Move to next round
+            // Update player's debt
+            var player = _playerService.GetPlayer(playerId);
+            player.TotalDebt += totalDebt;
+
             return RedirectToPage("/Round3Transportation", new { playerId = playerId });
         }
+
     }
 }

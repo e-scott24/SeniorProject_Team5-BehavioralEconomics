@@ -1,67 +1,95 @@
 ﻿@page
 @model DealtHands.Pages.Round2LoansModel
 @{
-    ViewData["Title"] = "Round 2 - Student Loans";
+	ViewData["Title"] = "Round 2 - Student Loans";
 }
 
 <div class="container mt-4">
-    <!-- Financial Status Header -->
-    <div class="alert alert-info">
-        <div class="row text-center">
-            <div class="col-md-4">
-                <strong>Monthly Income:</strong> $3,500
-            </div>
-            <div class="col-md-4">
-                <strong>Financial Health:</strong> Healthy
-            </div>
-            <div class="col-md-4">
-                <strong>Round:</strong> 2 of 5
-            </div>
-        </div>
-    </div>
+	<!-- Financial Status Header -->
+	<div class="alert alert-info">
+		<div class="row text-center">
+			<div class="col-md-3">
+				<strong>Salary:</strong> $@((Model.Player?.Salary ?? 0).ToString("N0"))
+			</div>
+			<div class="col-md-3">
+				<strong>Monthly:</strong> $@((Model.Player?.MonthlyIncome ?? 0).ToString("N0"))
+			</div>
+			<div class="col-md-3">
+				<strong>Available:</strong> $@(((Model.Player?.MonthlyIncome ?? 0) - (Model.Player?.MonthlyExpenses ?? 0)).ToString("N0"))
+			</div>
+			<div class="col-md-3">
+				<strong>Financial Health:</strong> @(Model.Player?.FinancialHealth ?? "Healthy")
+			</div>
+			<div class="col-md-3">
+				<strong>Round:</strong> 2 of 5
+			</div>
+		</div>
+	</div>
 
-    <!-- Round Title -->
-    <div class="text-center mb-4">
-        <h2>ROUND 2: STUDENT LOANS</h2>
-        <p class="text-muted">Choose your loan repayment plan</p>
-    </div>
+	<!-- Round Title -->
+	<div class="text-center mb-4">
+		<h2>ROUND 2: STUDENT LOANS</h2>
+		<p class="text-muted">Choose your loan repayment plan</p>
+	</div>
 
-    <!-- Loan Options -->
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Small Loan</h5>
-                    <p class="card-text">Total: $15,000</p>
-                    <p class="text-muted">10-Year Plan</p>
-                    <p><strong>$165/month</strong></p>
-                    <button class="btn btn-primary w-100">Select</button>
-                </div>
-            </div>
-        </div>
+	<!-- Loan Options -->
+	<div class="col-md-4 mb-3">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Small Loan</h5>
+				<p class="card-text">Total: $15,000</p>
+				<p class="text-muted">10-Year Plan</p>
+				<p><strong>$165/month</strong></p>
 
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Medium Loan</h5>
-                    <p class="card-text">Total: $35,000</p>
-                    <p class="text-muted">10-Year Plan</p>
-                    <p><strong>$385/month</strong></p>
-                    <button class="btn btn-primary w-100">Select</button>
-                </div>
-            </div>
-        </div>
+				<form method="post" asp-page-handler="SelectLoan">
+					<input type="hidden" name="playerId" value="@Model.Player?.Id" />
+					<input type="hidden" name="loanDescription" value="Small Loan - $15,000" />
+					<input type="hidden" name="monthlyPayment" value="165" />
+					<input type="hidden" name="totalDebt" value="15000" />
+					<button type="submit" class="btn btn-primary w-100">Select</button>
+				</form>
+			</div>
+		</div>
+	</div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Large Loan</h5>
-                    <p class="card-text">Total: $65,000</p>
-                    <p class="text-muted">10-Year Plan</p>
-                    <p><strong>$715/month</strong></p>
-                    <button class="btn btn-primary w-100">Select</button>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="col-md-4 mb-3">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Medium Loan</h5>
+				<p class="card-text">Total: $35,000</p>
+				<p class="text-muted">10-Year Plan</p>
+				<p><strong>$385/month</strong></p>
+
+				<form method="post" asp-page-handler="SelectLoan">
+					<input type="hidden" name="playerId" value="@Model.Player?.Id" />
+					<input type="hidden" name="loanDescription" value="Medium Loan - $35,000" />
+					<input type="hidden" name="monthlyPayment" value="385" />
+					<input type="hidden" name="totalDebt" value="35000" />
+					<button type="submit" class="btn btn-primary w-100">Select</button>
+				</form>
+
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-4 mb-3">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Large Loan</h5>
+				<p class="card-text">Total: $65,000</p>
+				<p class="text-muted">10-Year Plan</p>
+				<p><strong>$715/month</strong></p>
+				
+				<form method="post" asp-page-handler="SelectLoan">
+					<input type="hidden" name="playerId" value="@Model.Player?.Id" />
+					<input type="hidden" name="loanDescription" value="Large Loan - $65,000" />
+					<input type="hidden" name="monthlyPayment" value="715" />
+					<input type="hidden" name="totalDebt" value="65000" />
+					<button type="submit" class="btn btn-primary w-100">Select</button>
+				</form>
+			
+			</div>
+		</div>
+	</div>
+</div>
 </div>
