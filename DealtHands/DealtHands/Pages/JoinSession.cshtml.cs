@@ -58,6 +58,8 @@ namespace DealtHands.Pages
 
             // Redirect to lobby
             return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = player.Id });
-        }
+
+
+        } //closing IActionResult OnPost()
     }
 }

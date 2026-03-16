@@ -31,6 +31,13 @@ namespace DealtHands.Services
             return session;
         }
 
+
+        /// Get session by ID
+        public Session GetSessionById(int sessionId)
+        {
+            return _sessions.FirstOrDefault(s => s.Id == sessionId);
+        }
+
         /// <summary>
         /// Find a session by its code
         /// </summary>
@@ -51,6 +58,14 @@ namespace DealtHands.Services
                 session.CurrentRound = 1;
             }
         }
+
+
+        /// Get all sessions (for debugging purposes)
+        public List<Session> GetAllSessions()
+        {
+            return _sessions;
+        }
+
 
         /// <summary>
         /// Advance to next round

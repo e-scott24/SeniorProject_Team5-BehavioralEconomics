@@ -6,6 +6,7 @@
 }
 
 <div class="container mt-4">
+	<input type="hidden" id="sessionCode" value="@Model.SessionCode" />
 	<div class="card shadow">
 		<div class="card-header bg-primary text-white">
 			<div class="row">
@@ -21,12 +22,13 @@
 		</div>
 		<div class="card-body">
 			<h4>Waiting for game to start...</h4>
-			<p class="text-muted">Players joined: @Model.Players?.Count / @Model.Session?.MaxPlayers</p>
+			<p class="text-muted">Players joined: <span id="playerCount">@Model.Players?.Count</span> / @Model.Session?.MaxPlayers</p>
 
 			<hr class="my-4">
 
 			<h5 class="mb-3">Players in Lobby:</h5>
-			<div class="row">
+			
+			<div class="row" id="playerContainer">
 				@foreach (var player in Model.Players ?? new List<Player>())
 				{
 					<div class="col-md-2 mb-3">
@@ -38,6 +40,7 @@
 					</div>
 				}
 			</div>
+			
 			<!-- More players will appear here as they join -->
 			<div class="col-md-2 mb-3">
 				<div class="card bg-light">
@@ -62,19 +65,33 @@
 			</div>
 		</div>
 
-		<div class="alert alert-info mt-4">
-			<strong>Instructions:</strong> Share the session code <strong>@Model.SessionCode</strong> with your students.
-			They can join at <code>/JoinSession</code>
-		</div>
 
-		<div class="d-grid gap-2 mt-4">
-			<button class="btn btn-success btn-lg" disabled>
-				Start Game (Waiting for players...)
-			</button>
-			<button class="btn btn-outline-secondary">
-				Cancel Session
-			</button>
-		</div>
+
+		@if (Model.IsEducator)
+		{
+			<div class="alert alert-info mt-4">
+				<strong>Instructions:</strong> Share the session code <strong>@Model.SessionCode</strong> with your students.
+				They can join at <code>/JoinSession</code>
+			</div>
+
+			<div class="d-grid gap-2 mt-4">
+				<button class="btn btn-success btn-lg" disabled>
+					Start Game (Waiting for players...)
+				</button>
+				<button class="btn btn-outline-secondary">
+					Cancel Session
+				</button>
+			</div>
+		}
+		else
+		{
+			<div class="alert alert-success mt-4">
+				You've joined! Waiting for teacher to start...
+			</div>
+		}
+
+
+
 	</div>
 </div>
 </div>
@@ -93,4 +110,10 @@
 	}
 
 	}
-</style></div>
+</style>
+
+@section Scripts{
+	<script src="~/js/lobby.js"></script>
+}
+
+</div>

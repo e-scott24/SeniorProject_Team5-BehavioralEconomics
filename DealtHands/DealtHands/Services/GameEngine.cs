@@ -57,6 +57,9 @@ namespace DealtHands.Services
         {
             var players = _playerService.GetPlayersInSession(sessionId);
 
+            return players.All(player => player.Choices.Any(c => c.RoundNumber == roundNumber));
+
+            /*
             foreach (var player in players)
             {
                 // Check if player has made a choice for this round
@@ -65,7 +68,96 @@ namespace DealtHands.Services
             }
 
             return true;
+            */
         }
+
+
+        /// Advance game to the next round
+        public void AdvanceRound(int sessionId)
+        {
+            var session = _sessionService.GetSessionById(sessionId);
+            if (session == null) return;
+            if (session.CurrentRound < 6)
+                session.CurrentRound++;
+            //_sessionService.UpdateSession(session);
+        }
+
+
+        /// Determine the Razor Page for a round
+        public string GetRoundPage(int roundNumber)
+        {
+
+            return "/Round";
+
+            /*
+            return roundNumber switch
+            {
+                1 => "/Round1Career",
+                2 => "/Round2Loans",
+                3 => "/Round3Transportation",
+                4 => "/Round4Housing",
+                5 => "/Round5Family",
+                _ => "/Results"
+            };
+            */
+        }
+
+
+        // Get round configuration (for dynamic round handling)
+        public RoundConfig GetRoundConfig(int roundNumber)
+        {
+            switch (roundNumber)
+            {
+                case 1:
+                    return new RoundConfig
+                    {
+                        RoundNumber = 1,
+                        RoundName = "Career",
+                        RoundType = "Career",
+                        Choices = new List<string> { "Teacher", "Engineer", "Doctor", "Artist" },
+                        RequiresAmount = true // salary input
+                    };
+                case 2:
+                    return new RoundConfig
+                    {
+                        RoundNumber = 2,
+                        RoundName = "Loans",
+                        RoundType = "Loans",
+                        Choices = new List<string> { "Bank Loan", "Private Loan", "No Loan" },
+                        RequiresAmount = true
+                    };
+                case 3:
+                    return new RoundConfig
+                    {
+                        RoundNumber = 3,
+                        RoundName = "Transportation",
+                        RoundType = "Transportation",
+                        Choices = new List<string> { "Car", "Bike", "Public Transit" },
+                        RequiresAmount = true
+                    };
+                case 4:
+                    return new RoundConfig
+                    {
+                        RoundNumber = 4,
+                        RoundName = "Housing",
+                        RoundType = "Housing",
+                        Choices = new List<string> { "Rent", "Buy Condo", "Buy House" },
+                        RequiresAmount = true
+                    };
+                case 5:
+                    return new RoundConfig
+                    {
+                        RoundNumber = 5,
+                        RoundName = "Family",
+                        RoundType = "Family",
+                        Choices = new List<string> { "Single", "Married", "Married with Kids" },
+                        RequiresAmount = false
+                    };
+                default:
+                    return null; // No more rounds
+            }
+        }
+
 
         /// <summary>
         /// Calculate final results for a player
@@ -90,7 +182,7 @@ namespace DealtHands.Services
         }
     }
 
-    // Helper class for results
+    // Helper class for displaying results
     public class PlayerResults
     {
         public string PlayerName { get; set; }

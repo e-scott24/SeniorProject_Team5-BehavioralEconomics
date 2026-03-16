@@ -31,7 +31,7 @@ namespace DealtHands.Models
         public bool IsCompleted { get; set; }
 
         // Which round are we on? (1-5)
-        public int CurrentRound { get; set; }
+        public int CurrentRound { get; set; } = 1; //default to round 1 when session is created
 
         // ===== RELATIONSHIPS =====
         // A session has many players
