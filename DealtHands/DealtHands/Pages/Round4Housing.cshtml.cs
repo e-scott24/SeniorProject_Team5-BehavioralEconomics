@@ -23,16 +23,16 @@ namespace DealtHands.Pages
             Player = _playerService.GetPlayer(playerId);
         }
 
-        public IActionResult OnPostSelectCareer(int playerId, string careerName, decimal salary)
+        public IActionResult OnPostSelectHousing(int playerId, string housingDescription, decimal monthlyPayment, decimal? purchasePrice)
         {
             // Record the choice
             _gameEngine.RecordChoice(
                 playerId: playerId,
                 roundNumber: 4,
                 roundType: "Housing",
-                choiceDescription: careerName,
-                monthlyCost: 0,
-                totalPrice: salary
+                choiceDescription: housingDescription,
+                monthlyCost: monthlyPayment,
+                totalPrice: purchasePrice
             );
 
             // Move to next round

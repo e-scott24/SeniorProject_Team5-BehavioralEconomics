@@ -22,19 +22,19 @@ namespace DealtHands.Pages
         {
             Player = _playerService.GetPlayer(playerId);
         }
-        
-        public IActionResult OnPostSelectCareer(int playerId, string careerName, decimal salary)
+
+        public IActionResult OnPostSelectVehicle(int playerId, string vehicleDescription, decimal monthlyPayment, decimal purchasePrice)
         {
-            // Record the choice
+            // Record choices
             _gameEngine.RecordChoice(
                 playerId: playerId,
                 roundNumber: 3,
                 roundType: "Transportation",
-                choiceDescription: careerName,
-                monthlyCost: 0,
-                totalPrice: salary
+                choiceDescription: vehicleDescription,
+                monthlyCost: monthlyPayment,
+                totalPrice: purchasePrice
             );
-            
+
             // Move to next round
             return RedirectToPage("/Round4Housing", new { playerId = playerId });
         }

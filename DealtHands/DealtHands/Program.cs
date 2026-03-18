@@ -1,4 +1,6 @@
+using DealtHands.Data;
 using DealtHands.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,10 @@ builder.Services.AddScoped<GameEngine>();
 builder.Services.AddScoped<FinancialCalculator>();
 builder.Services.AddScoped<GameChangerService>();
 //builder.Services.AddScoped<AIPricingService>();
+
+// Add database context
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 //for calculator

@@ -32,4 +32,53 @@
 		<p class="text-muted">Placholder Text</p>
 	</div>
 
+    <!-- Cards -->
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Single, No Dependents</h5>
+                <p class="card-text">No children or pets</p>
+                <p class="text-muted">Monthly Cost: $0</p>
+                <form method="post" asp-page-handler="SelectFamily">
+                    <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                    <input type="hidden" name="familyDescription" value="Single, No Dependents" />
+                    <input type="hidden" name="monthlyPayment" value="0" />
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">One Child</h5>
+                <p class="card-text">Daycare + expenses</p>
+                <p class="text-muted">Monthly Cost: $900</p>
+                <form method="post" asp-page-handler="SelectFamily">
+                    <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                    <input type="hidden" name="familyDescription" value="One Child (Daycare + Expenses)" />
+                    <input type="hidden" name="monthlyPayment" value="900" />
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Two Children</h5>
+                <p class="card-text">Daycare for 2 + expenses</p>
+                <p class="text-muted">Monthly Cost: $1,600</p>
+                <form method="post" asp-page-handler="SelectFamily">
+                    <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                    <input type="hidden" name="familyDescription" value="Two Children (Daycare + Expenses)" />
+                    <input type="hidden" name="monthlyPayment" value="1600" />
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>

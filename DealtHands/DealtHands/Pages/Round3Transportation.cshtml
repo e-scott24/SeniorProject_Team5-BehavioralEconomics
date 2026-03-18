@@ -40,7 +40,13 @@
                     <p class="text-muted">5-Year Loan</p>
                     <p><strong>$320/month</strong></p>
                     <small class="text-muted">+ $150/mo insurance</small>
-                    <button class="btn btn-primary w-100 mt-2">Select</button>
+                    <form method="post" asp-page-handler="SelectVehicle">
+                        <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                        <input type="hidden" name="vehicleDescription" value="2020 Toyota Camry" />
+                        <input type="hidden" name="monthlyPayment" value="320" />
+                        <input type="hidden" name="purchasePrice" value="18500" />
+                        <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -53,7 +59,13 @@
                     <p class="text-muted">5-Year Loan</p>
                     <p><strong>$285/month</strong></p>
                     <small class="text-muted">+ $130/mo insurance</small>
-                    <button class="btn btn-primary w-100 mt-2">Select</button>
+                    <form method="post" asp-page-handler="SelectVehicle">
+                        <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                        <input type="hidden" name="vehicleDescription" value="Used 2018 Honda Civic" />
+                        <input type="hidden" name="monthlyPayment" value="250" />
+                        <input type="hidden" name="purchasePrice" value="12000" />
+                        <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -66,7 +78,13 @@
                     <p class="text-muted">Monthly Pass</p>
                     <p><strong>$80/month</strong></p>
                     <small class="text-muted">No insurance needed</small>
-                    <button class="btn btn-primary w-100 mt-2">Select</button>
+                    <form method="post" asp-page-handler="SelectVehicle">
+                        <input type="hidden" name="playerId" value="@Model.Player?.Id" />
+                        <input type="hidden" name="vehicleDescription" value="Public Transit" />
+                        <input type="hidden" name="monthlyPayment" value="80" />
+                        <input type="hidden" name="purchasePrice" value="0" />
+                        <button type="submit" class="btn btn-primary w-100 mt-2">Select</button>
+                    </form>
                 </div>
             </div>
         </div>
