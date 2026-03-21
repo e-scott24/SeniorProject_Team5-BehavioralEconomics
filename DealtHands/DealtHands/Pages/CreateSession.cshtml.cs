@@ -35,6 +35,9 @@ namespace DealtHands.Pages
         {
             if (!ModelState.IsValid) return Page();
 
+            // Get educator ID from session (if needed)
+            int? educatorId = HttpContext.Session.GetInt32("EducatorId");
+
             // Use service to create session
             var session = _sessionService.CreateSession(SessionName, GameMode, Difficulty, MaxPlayers);
 

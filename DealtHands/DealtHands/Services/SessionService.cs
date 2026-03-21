@@ -1,41 +1,51 @@
 ﻿using DealtHands.Models;
+using DealtHands.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace DealtHands.Services
 {
     public class SessionService
     {
-        // For now, in-memory storage (replace with database later)
-        private static List<Session> _sessions = new List<Session>();
-        private static int _nextId = 1;
+        private readonly ApplicationDbContext _context;
+
+        public SessionService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         /// <summary>
         /// Create a new game session
         /// </summary>
-        public Session CreateSession(string name, string gameMode, string difficulty, int maxPlayers)
+        public Session CreateSession(string name, string gameMode, string difficulty, int maxPlayers, int? educatorId = null)
         {
             var session = new Session
             {
-                Id = _nextId++,
                 Code = GenerateUniqueCode(),
                 Name = name,
                 GameMode = gameMode,
                 Difficulty = difficulty,
                 MaxPlayers = maxPlayers,
+                EducatorId = educatorId,
                 CreatedAt = DateTime.UtcNow,
                 IsStarted = false,
                 IsCompleted = false,
-                CurrentRound = 0
+                CurrentRound = 1
             };
 
-            _sessions.Add(session);
+            _context.Sessions.Add(session);
+            _context.SaveChanges();
+
             return session;
         }
 
-
+        /// <summary>
         /// Get session by ID
+        /// </summary>
         public Session GetSessionById(int sessionId)
         {
-            return _sessions.FirstOrDefault(s => s.Id == sessionId);
+            return _context.Sessions
+                .Include(s => s.Players)
+                .FirstOrDefault(s => s.Id == sessionId);
         }
 
         /// <summary>
@@ -43,7 +53,9 @@ namespace DealtHands.Services
         /// </summary>
         public Session GetSessionByCode(string code)
         {
-            return _sessions.FirstOrDefault(s => s.Code == code);
+            return _context.Sessions
+                .Include(s => s.Players)
+                .FirstOrDefault(s => s.Code == code);
         }
 
         /// <summary>
@@ -51,35 +63,38 @@ namespace DealtHands.Services
         /// </summary>
         public void StartSession(int sessionId)
         {
-            var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
+            var session = _context.Sessions.Find(sessionId);
             if (session != null)
             {
                 session.IsStarted = true;
                 session.CurrentRound = 1;
+                _context.SaveChanges();
             }
         }
 
-
+        /// <summary>
         /// Get all sessions (for debugging purposes)
+        /// </summary>
         public List<Session> GetAllSessions()
         {
-            return _sessions;
+            return _context.Sessions.ToList();
         }
-
 
         /// <summary>
         /// Advance to next round
         /// </summary>
         public void AdvanceToNextRound(int sessionId)
         {
-            var session = _sessions.FirstOrDefault(s => s.Id == sessionId);
+            var session = _context.Sessions.Find(sessionId);
             if (session != null && session.CurrentRound < 5)
             {
                 session.CurrentRound++;
+                _context.SaveChanges();
             }
             else if (session != null && session.CurrentRound == 5)
             {
                 session.IsCompleted = true;
+                _context.SaveChanges();
             }
         }
 
@@ -95,9 +110,35 @@ namespace DealtHands.Services
             {
                 code = random.Next(10000, 99999).ToString();
             }
-            while (_sessions.Any(s => s.Code == code));
+            while (_context.Sessions.Any(s => s.Code == code));
 
             return code;
         }
+
+        /// <summary>
+        /// Cancel a session and mark all players as inactive
+        /// </summary>
+        public void CancelSession(int sessionId)
+        {
+            var session = _context.Sessions
+                .Include(s => s.Players)
+                .FirstOrDefault(s => s.Id == sessionId);
+
+            if (session != null)
+            {
+                session.IsCompleted = true;
+                session.IsActive = false;
+
+                // Mark all players as inactive
+                foreach (var player in session.Players)
+                {
+                    player.IsActive = false;
+                }
+
+                _context.SaveChanges();
+            }
+        }
+
+
     }
 }

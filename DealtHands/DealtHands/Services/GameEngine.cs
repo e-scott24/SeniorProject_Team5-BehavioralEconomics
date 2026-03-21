@@ -1,4 +1,5 @@
-﻿using DealtHands.Models;
+﻿using DealtHands.Data;
+using DealtHands.Models;
 
 namespace DealtHands.Services
 {
@@ -6,11 +7,13 @@ namespace DealtHands.Services
     {
         private readonly SessionService _sessionService;
         private readonly PlayerService _playerService;
+        private readonly ApplicationDbContext _context;
 
-        public GameEngine(SessionService sessionService, PlayerService playerService)
+        public GameEngine(SessionService sessionService, PlayerService playerService, ApplicationDbContext context)
         {
             _sessionService = sessionService;
             _playerService = playerService;
+            _context = context;
         }
 
         /// <summary>
@@ -34,7 +37,8 @@ namespace DealtHands.Services
                 ChosenAt = DateTime.UtcNow
             };
 
-            player.Choices.Add(choice);
+            // Create the choice record
+            _context.PlayerChoices.Add(choice);
 
             // Update player's cumulative expenses
             player.MonthlyExpenses += monthlyCost;
@@ -49,7 +53,12 @@ namespace DealtHands.Services
             // Recalculate financial health
             _playerService.UpdateFinancialState(playerId, player.MonthlyIncome,
                                                 player.MonthlyExpenses, player.TotalDebt);
-        }
+
+            // Save all changes
+            _context.SaveChanges();
+
+        } // closing public void RecordChoice()
+
 
         /// <summary>
         /// Check if all players in a session have completed the current round
@@ -80,7 +89,7 @@ namespace DealtHands.Services
             if (session == null) return;
             if (session.CurrentRound < 6)
                 session.CurrentRound++;
-            //_sessionService.UpdateSession(session);
+            _context.SaveChanges(); 
         }
 
 

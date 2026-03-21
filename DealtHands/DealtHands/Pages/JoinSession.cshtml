@@ -7,33 +7,68 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow text-center">
-                <div class="card-body p-5">
-                    <h1 class="mb-4">DEALT HANDS</h1>
-                    <h4 class="text-muted mb-4">Join a Game Session</h4>
-
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Join Game Session</h3>
+                </div>
+                <div class="card-body">
                     <form method="post">
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label">Session Code</label>
                             <input type="text" class="form-control form-control-lg text-center"
                                    asp-for="SessionCode"
-                                   placeholder="12345" maxlength="5" 
-                                   style="font-size: 2em; letter-spacing: 0.5em;">
+                                   placeholder="12345"
+                                   maxlength="5"
+                                   required />
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label">Your Name</label>
-                            <input type="text" class="form-control" 
-                                   asp-for="PlayerName"
-                                   placeholder="Enter your name">
+                        <div class="mb-3">
+                            <label class="form-label">Are you a returning player?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="returningPlayer"
+                                       onchange="togglePlayerCode()" />
+                                <label class="form-check-label" for="returningPlayer">
+                                    I have a player code
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-success btn-lg">Join Game</button>
+                        <div id="newPlayerSection">
+                            <div class="mb-3">
+                                <label class="form-label">Your Name</label>
+                                <input type="text" class="form-control"
+                                       asp-for="PlayerName"
+                                       placeholder="Enter your name" />
+                            </div>
                         </div>
+
+                        <div id="returningPlayerSection" style="display:none;">
+                            <div class="mb-3">
+                                <label class="form-label">Player Code</label>
+                                <input type="text" class="form-control text-center"
+                                       asp-for="PlayerCode"
+                                       placeholder="1234"
+                                       maxlength="4" />
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@Model.ErrorMessage</div>
+                        }
+
+                        <button type="submit" class="btn btn-success btn-lg w-100">Join Game</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function togglePlayerCode() {
+        const returning = document.getElementById('returningPlayer').checked;
+        document.getElementById('newPlayerSection').style.display = returning ? 'none' : 'block';
+        document.getElementById('returningPlayerSection').style.display = returning ? 'block' : 'none';
+    }
+</script>

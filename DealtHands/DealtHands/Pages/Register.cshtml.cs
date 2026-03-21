@@ -1,0 +1,50 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using DealtHands.Services;
+
+namespace DealtHands.Pages
+{
+    public class RegisterModel : PageModel
+    {
+        private readonly EducatorService _educatorService;
+
+        public RegisterModel(EducatorService educatorService)
+        {
+            _educatorService = educatorService;
+        }
+
+        [BindProperty]
+        public string Name { get; set; }
+
+        [BindProperty]
+        public string Email { get; set; }
+
+        [BindProperty]
+        public string Password { get; set; }
+
+        public string ErrorMessage { get; set; }
+
+        public void OnGet() { }
+
+        public IActionResult OnPost()
+        {
+            try
+            {
+                var educator = _educatorService.Register(Email, Password, Name);
+
+                // Auto-login after registration
+                HttpContext.Session.SetInt32("EducatorId", educator.Id);
+                HttpContext.Session.SetString("EducatorName", educator.Name);
+
+                //return RedirectToPage("/CreateSession");
+                return RedirectToPage("/EducatorDashboard");
+            }
+            catch (Exception ex)
+            {
+                //ErrorMessage = "Registration failed. Email may already be in use.";
+                ErrorMessage = $"Error: {ex.Message} | Inner: {ex.InnerException?.Message}";
+                return Page();
+            }
+        }
+    }
+}

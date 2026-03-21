@@ -11,6 +11,11 @@
         public int SessionId { get; set; }
         public Session Session { get; set; }
 
+
+        // Player Code for joining the game after it is paused
+        // and then resumed to keep player's data/progress
+        public string PlayerCode { get; set; } // 4-digit unique code per player
+
         // When did they join?
         public DateTime JoinedAt { get; set; }
 

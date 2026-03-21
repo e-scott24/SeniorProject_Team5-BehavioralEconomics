@@ -1,8 +1,17 @@
 ﻿// Fetch and update player list
 async function updatePlayers() {
     const sessionCode = document.getElementById('sessionCode').value;
-
     try {
+        // Check if session was cancelled
+        const cancelResponse = await fetch(`/Lobby?handler=CheckSessionCancelled&sessionCode=${sessionCode}`);
+        const isActive = await cancelResponse.json();
+
+        if (!isActive) {
+            alert('This session has been cancelled by the educator.');
+            window.location.href = '/';
+            return;
+        }
+
         // Check if game started
         const checkResponse = await fetch(`/Lobby?handler=CheckGameStarted&sessionCode=${sessionCode}`);
         const started = await checkResponse.json();

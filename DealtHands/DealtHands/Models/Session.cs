@@ -21,6 +21,10 @@ namespace DealtHands.Models
         // 35, for example
         public int MaxPlayers { get; set; }
 
+        // Educator
+        public int? EducatorId { get; set; }
+        public Educator Educator { get; set; }
+
         // When was this session created?
         public DateTime CreatedAt { get; set; }
 
@@ -32,6 +36,8 @@ namespace DealtHands.Models
 
         // Which round are we on? (1-5)
         public int CurrentRound { get; set; } = 1; //default to round 1 when session is created
+
+        public bool IsActive { get; set; } = true; //default to active when session is created
 
         // ===== RELATIONSHIPS =====
         // A session has many players

@@ -41,24 +41,28 @@
 
 		@if (Model.IsEducator)
 		{
-			<div class="alert alert-info mt-4">
-				<strong>Instructions:</strong> Share code <strong>@Model.SessionCode</strong> with students.
-				They can join at <code>/JoinSession</code>
-			</div>
-
-			<!-- Wrapped in form, removed disabled -->
 			<form method="post">
 				<input type="hidden" name="sessionCode" value="@Model.SessionCode" />
 				<div class="d-grid gap-2 mt-4">
 					<button type="submit" class="btn btn-success btn-lg" asp-page-handler="StartGame">
 						Start Game
 					</button>
-					<button class="btn btn-outline-secondary" type="button">Cancel Session</button>
+					<button type="submit" class="btn btn-outline-danger" asp-page-handler="CancelSession"
+							onclick="return confirm('Are you sure you want to cancel this session? All player data will be lost.');">
+						Cancel Session
+					</button>
 				</div>
 			</form>
 		}
 		else
 		{
+			@if (Model.Player != null)
+			{
+				<div class="alert alert-warning mt-3">
+					<h5 class="mb-0">Your Player Code: <strong>@Model.Player.PlayerCode</strong></h5>
+					<small>Save this code! You'll need it to rejoin if disconnected.</small>
+				</div>
+			}
 			<div class="alert alert-success mt-4">
 				You've joined! Waiting for educator to start...
 			</div>

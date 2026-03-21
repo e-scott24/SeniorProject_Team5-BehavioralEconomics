@@ -14,6 +14,7 @@ builder.Services.AddScoped<GameEngine>();
 builder.Services.AddScoped<FinancialCalculator>();
 builder.Services.AddScoped<GameChangerService>();
 //builder.Services.AddScoped<AIPricingService>();
+builder.Services.AddScoped<EducatorService>();
 
 // Add database context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

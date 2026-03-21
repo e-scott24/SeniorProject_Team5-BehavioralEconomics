@@ -21,27 +21,48 @@ namespace DealtHands.Pages
         [BindProperty]
         public string PlayerName { get; set; }
 
+        [BindProperty]
+        public string PlayerCode { get; set; }
+
         public string ErrorMessage { get; set; }
 
-        public void OnGet()
-        {
-            // Page loads
-        }
+        public void OnGet() { }
 
         public IActionResult OnPost()
         {
-            if (string.IsNullOrEmpty(SessionCode) || string.IsNullOrEmpty(PlayerName))
+            // Validate session code
+            if (string.IsNullOrEmpty(SessionCode))
             {
-                ErrorMessage = "Please enter both session code and your name.";
+                ErrorMessage = "Please enter a session code.";
                 return Page();
             }
 
-            // Find the session
             var session = _sessionService.GetSessionByCode(SessionCode);
 
             if (session == null)
             {
-                ErrorMessage = "Invalid session code. Please check and try again.";
+                ErrorMessage = "Invalid session code.";
+                return Page();
+            }
+
+            // Returning player with code
+            if (!string.IsNullOrEmpty(PlayerCode))
+            {
+                var player = _playerService.JoinSession(session.Id, null, PlayerCode);
+
+                if (player == null)
+                {
+                    ErrorMessage = "Invalid player code for this session.";
+                    return Page();
+                }
+
+                return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = player.Id });
+            }
+
+            // New player with name
+            if (string.IsNullOrEmpty(PlayerName))
+            {
+                ErrorMessage = "Please enter your name.";
                 return Page();
             }
 
@@ -53,13 +74,9 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            // Add player to session
-            var player = _playerService.JoinSession(session.Id, PlayerName);
+            var newPlayer = _playerService.JoinSession(session.Id, PlayerName);
 
-            // Redirect to lobby
-            return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = player.Id });
-
-
-        } //closing IActionResult OnPost()
+            return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = newPlayer.Id });
+        }
     }
 }

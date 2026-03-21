@@ -16,6 +16,8 @@ namespace DealtHands.Pages
             _playerService = playerService;
         }
 
+        public Player Player { get; set; }
+
         public string SessionCode { get; set; }
         public Session Session { get; set; }
         public List<Player> Players { get; set; }
@@ -35,6 +37,12 @@ namespace DealtHands.Pages
             if (Session != null)
             {
                 Players = _playerService.GetPlayersInSession(Session.Id);
+
+                // Get current player if student
+                if (playerId.HasValue)
+                {
+                    Player = _playerService.GetPlayer(playerId.Value);
+                }
             }
         }
 
@@ -73,5 +81,27 @@ namespace DealtHands.Pages
             var session = _sessionService.GetSessionByCode(sessionCode);
             return new JsonResult(session?.IsStarted ?? false);
         }
+
+        // Cancel Session handler
+        public IActionResult OnPostCancelSession(string sessionCode)
+        {
+            var session = _sessionService.GetSessionByCode(sessionCode);
+            if (session == null) return RedirectToPage("/Dashboard");
+            else
+            {
+                _sessionService.CancelSession(session.Id);
+            }
+            return RedirectToPage("/Dashboard");
+
+        }
+
+        public JsonResult OnGetCheckSessionCancelled(string sessionCode)
+        {
+            var session = _sessionService.GetSessionByCode(sessionCode);
+            return new JsonResult(session?.IsActive ?? true); // Return true if active, false if cancelled
+        }
+
+
+
     }
 }

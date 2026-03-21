@@ -12,5 +12,6 @@ namespace DealtHands.Data
         public DbSet<PlayerChoice> PlayerChoices { get; set; }
         public DbSet<GameChangerEvent> GameChangerEvents { get; set; }
         public DbSet<PlayerGameChanger> PlayerGameChangers { get; set; }
+        public DbSet<Educator> Educators { get; set; }
     }
 }
