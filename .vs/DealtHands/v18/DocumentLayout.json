@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\jason\\source\\repos\\DealtHands\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\users\\jason\\source\\repos\\dealthands\\dealthands\\services\\gamechangerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\services\\gamechangerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameChangerService.cs",
+              "DocumentMoniker": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Services\\GameChangerService.cs",
+              "RelativeDocumentMoniker": "DealtHands\\Services\\GameChangerService.cs",
+              "ToolTip": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Services\\GameChangerService.cs",
+              "RelativeToolTip": "DealtHands\\Services\\GameChangerService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwCAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-22T02:44:57.339Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

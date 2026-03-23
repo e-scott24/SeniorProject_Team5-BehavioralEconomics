@@ -1,0 +1,30 @@
+﻿@page
+@model DealtHands.Pages.RoundModel
+@{
+    ViewData["Title"] = Model.Round?.RoundName ?? "Round";
+}
+
+<h2>@Model.Round?.RoundName</h2>
+
+@if (TempData["WaitingMessage"] != null)
+{
+    <p>@TempData["WaitingMessage"]</p>
+}
+else
+{
+    <form method="post">
+        <select name="choiceDescription" required>
+            @foreach (var c in Model.Round.Choices)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+
+        @if (Model.Round.RequiresAmount)
+        {
+            <input type="number" step="0.01" name="amount" placeholder="Enter amount" required />
+        }
+
+        <button type="submit">Submit</button>
+    </form>
+}

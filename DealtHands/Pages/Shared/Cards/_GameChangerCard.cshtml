@@ -1,0 +1,83 @@
+@*  Name: Jason Black
+    Date: 3/20/2026
+    Last Update: 3/22/2026
+
+    Renders a single Game Changer card.
+    IsPositive drives the entire color scheme — green or red.
+    Card CSS and sizing are defined in _GameChangerOverlay.cshtml.
+
+    The correct file paths are the following:
+    ...\DealtHands\DealtHands\Services\GameChangerService.cs
+    ...\DealtHands\DealtHands\Services\GameEngine.cs
+    ...\DealtHands\DealtHands\Models\GameChangerEvent.cs
+    ...\DealtHands\DealtHands\Models\Cards\GameChangerCard.cs
+    ...\DealtHands\DealtHands\Pages\Shared\GameChangerOverlayModel.cs
+    ...\DealtHands\DealtHands\Pages\Shared\Cards\_GameChangerCard.cshtml
+    ...\DealtHands\DealtHands\Pages\Shared\Cards\_GameChangerOverlay.cshtml
+*@
+
+@model DealtHands.Models.Cards.GameChangerCard
+
+@{
+    var headerColor = Model.IsPositive ? "#22c55e" : "#dc2626";
+    var accentColor = Model.IsPositive ? "#16a34a" : "#dc2626";
+    var darkColor = Model.IsPositive ? "#15803d" : "#991b1b";
+    var lightBg = Model.IsPositive ? "#f0fdf4" : "#fef2f2";
+    var borderColor = Model.IsPositive ? "#bbf7d0" : "#fecaca";
+    var statBg = Model.IsPositive ? "#dcfce7" : "#fee2e2";
+    var statColor = Model.IsPositive ? "#14532d" : "#7f1d1d";
+    bool hasBadge = !string.IsNullOrEmpty(Model.BadgeText);
+    bool hasSecond = !string.IsNullOrEmpty(Model.SecondaryLabel);
+    bool hasStats = hasBadge || hasSecond;
+    bool hasBoth = hasBadge && hasSecond;
+}
+
+<div class="gc-card-wrap" data-card-id="@Model.Id">
+
+    <div class="gc-card" style="border-color: @borderColor;">
+
+        <div class="gc-header" style="background: @headerColor;">
+            <span class="gc-header-title">Game Changer</span>
+        </div>
+
+        <div class="gc-body">
+
+            <h1 class="gc-title">@Model.Title</h1>
+            <p class="gc-desc">@Model.Description</p>
+
+            <p class="gc-financial-label">Financial Impact</p>
+
+            <div class="gc-effect-box" style="background: @lightBg; border-color: @borderColor;">
+                <span class="gc-effect-sublabel" style="color: @accentColor;">@Model.EffectLabel</span>
+                <span class="gc-effect-amount" style="color: @darkColor;">@Model.EffectAmount</span>
+                <p class="gc-note">@Model.EffectNote</p>
+
+                @if (hasSecond)
+                {
+                    <div class="gc-divider" style="background: @borderColor;"></div>
+                    <span class="gc-effect-sublabel" style="color: @accentColor;">@Model.SecondaryLabel</span>
+                    <span class="gc-effect-amount" style="color: @darkColor;">@Model.SecondaryAmount</span>
+                }
+            </div>
+
+            @if (hasSecond)
+            {
+                <div class="gc-stats-grid" style="grid-template-columns: 1fr;">
+                    <div class="gc-stat-box" style="background: @statBg; border-color: @borderColor;">
+                        <span class="gc-stat-value" style="color: @statColor;">@Model.SecondaryAmount</span>
+                        <span class="gc-stat-label" style="color: @accentColor;">@Model.SecondaryLabel</span>
+                    </div>
+                </div>
+            }
+
+            <hr class="gc-hr" style="border-top-color: @borderColor;" />
+
+            <button class="gc-btn"
+                    style="background: @accentColor;"
+                    onclick="nextCard()">
+                Continue
+            </button>
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,111 @@
+@page
+@model DealtHands.Pages.Round3TransportationModel
+@using DealtHands.Pages.Shared
+@{
+    ViewData["Title"] = "Round 3 - Transportation";
+}
+
+<div class="container mt-4">
+
+    <div class="alert alert-info">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <strong>Salary:</strong> $@((Model.Player?.Salary ?? 0).ToString("N0"))
+            </div>
+            <div class="col-md-3">
+                <strong>Monthly:</strong> $@((Model.Player?.MonthlyIncome ?? 0).ToString("N0"))
+            </div>
+            <div class="col-md-3">
+                <strong>Available:</strong> $@(((Model.Player?.MonthlyIncome ?? 0) - (Model.Player?.MonthlyExpenses ?? 0)).ToString("N0"))
+            </div>
+            <div class="col-md-3">
+                <strong>Financial Health:</strong> @(Model.Player?.FinancialHealth ?? "Healthy")
+            </div>
+            <div class="col-md-3">
+                <strong>Round:</strong> 3 of 5
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mb-4">
+        <h2>ROUND 3: TRANSPORTATION</h2>
+        <p class="text-muted">How will you get around?</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">2020 Toyota Camry</h5>
+                    <p class="card-text">Price: $18,500</p>
+                    <p class="text-muted">5-Year Loan</p>
+                    <p><strong>$320/month</strong></p>
+                    <small class="text-muted">+ $150/mo insurance</small>
+                    <button class="btn btn-primary w-100 mt-2"
+                            onclick="selectVehicle(@Model.Player?.Id, '2020 Toyota Camry', 320, 18500)">
+                        Select
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">2018 Honda Civic</h5>
+                    <p class="card-text">Price: $16,500</p>
+                    <p class="text-muted">5-Year Loan</p>
+                    <p><strong>$285/month</strong></p>
+                    <small class="text-muted">+ $130/mo insurance</small>
+                    <button class="btn btn-primary w-100 mt-2"
+                            onclick="selectVehicle(@Model.Player?.Id, 'Used 2018 Honda Civic', 250, 12000)">
+                        Select
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Public Transit</h5>
+                    <p class="card-text">No purchase needed</p>
+                    <p class="text-muted">Monthly Pass</p>
+                    <p><strong>$80/month</strong></p>
+                    <small class="text-muted">No insurance needed</small>
+                    <button class="btn btn-primary w-100 mt-2"
+                            onclick="selectVehicle(@Model.Player?.Id, 'Public Transit', 80, 0)">
+                        Select
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<partial name="Cards/_GameChangerOverlay" model='new GameChangerOverlayModel
+{
+    Cards    = Model.Cards,
+    PlayerId = Model.Player?.Id ?? 0,
+    NextUrl  = "/Round4Housing"
+}' />
+
+<script>
+    async function selectVehicle(playerId, vehicleDescription, monthlyPayment, purchasePrice) {
+        const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        const resp = await fetch('?handler=SelectVehicle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': csrfToken
+            },
+            body: `playerId=${playerId}&vehicleDescription=${encodeURIComponent(vehicleDescription)}&monthlyPayment=${monthlyPayment}&purchasePrice=${purchasePrice}`
+        });
+
+        const data = await resp.json();
+        if (data.success) showCardOverlay();
+    }
+</script>

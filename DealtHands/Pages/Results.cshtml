@@ -1,0 +1,79 @@
+﻿@page
+@model DealtHands.Pages.ResultsModel
+@{
+    ViewData["Title"] = "Game Results";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h2 class="mb-0">GAME COMPLETE!</h2>
+                </div>
+                <div class="card-body text-center">
+
+                    <div class="mb-4">
+                        <h3>Your Final Financial Health</h3>
+                        <div style="font-size: 5rem;"></div>
+                        <h4 class="text-success">Healthy</h4>
+                    </div>
+
+                    <hr>
+
+                    <div class="row text-start">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Income</h6>
+                                    <h4 class="text-success">$3,500</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Expenses</h6>
+                                    <h4 class="text-danger">$2,845</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Available</h6>
+                                    <h4 class="text-primary">$655</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Total Debt</h6>
+                                    <h4 class="text-warning">$58,500</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Key Takeaways</h5>
+                    <div class="alert alert-info text-start">
+                        <ul class="mb-0">
+                            <li>Your car payment was 15% of your income</li>
+                            <li>Housing costs were within the recommended 25%</li>
+                            <li>Game Changers cost you $5,200 total</li>
+                            <li>You finished with a positive monthly budget!</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="/JoinSession" class="btn btn-primary btn-lg">Play Again</a>
+                        <button class="btn btn-outline-secondary">View Detailed Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
