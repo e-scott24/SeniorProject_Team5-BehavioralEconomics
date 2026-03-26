@@ -16,7 +16,7 @@
                     <div class="mb-4">
                         <h3>Your Final Financial Health</h3>
                         <div style="font-size: 5rem;"></div>
-                        <h4 class="text-success">Healthy</h4>
+                        <h4 class="text-success">@Model.FinancialState?.FinancialHealth</h4>
                     </div>
 
                     <hr>
@@ -26,7 +26,7 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="text-muted">Monthly Income</h6>
-                                    <h4 class="text-success">$3,500</h4>
+                                    <h4 class="text-success">$@Model.FinancialState?.MonthlyIncome.ToString("N0")</h4>
                                 </div>
                             </div>
                         </div>
@@ -34,7 +34,7 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="text-muted">Monthly Expenses</h6>
-                                    <h4 class="text-danger">$2,845</h4>
+                                    <h4 class="text-danger">$@Model.FinancialState?.MonthlyExpenses.ToString("N0")</h4>
                                 </div>
                             </div>
                         </div>
@@ -42,10 +42,11 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="text-muted">Monthly Available</h6>
-                                    <h4 class="text-primary">$655</h4>
+                                    <h4 class="text-primary">$@Model.FinancialState?.Available.ToString("N0")</h4>
                                 </div>
                             </div>
                         </div>
+                        <!--
                         <div class="col-md-6 mb-3">
                             <div class="card bg-light">
                                 <div class="card-body">
@@ -54,6 +55,7 @@
                                 </div>
                             </div>
                         </div>
+                        -->
                     </div>
 
                     <hr>

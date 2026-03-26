@@ -13,6 +13,12 @@ public partial class GameSession
 
     public string JoinCode { get; set; } = null!;
 
+    // Friendly display name set by educator at creation
+    public string? Name { get; set; }
+
+    // "Easy", "Medium", or "Hard" — affects game changer probability
+    public string? Difficulty { get; set; }
+
     public string Status { get; set; } = null!;
 
     public byte CurrentRoundNumber { get; set; }

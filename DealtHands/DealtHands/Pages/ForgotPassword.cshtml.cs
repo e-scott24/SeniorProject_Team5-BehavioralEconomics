@@ -6,11 +6,11 @@ namespace DealtHands.Pages
 {
     public class ForgotPasswordModel : PageModel
     {
-        private readonly EducatorService _educatorService;
+        private readonly UserService _userService;
 
-        public ForgotPasswordModel(EducatorService educatorService)
+        public ForgotPasswordModel(UserService userService)
         {
-            _educatorService = educatorService;
+            _userService = userService;
         }
 
         [BindProperty]
@@ -21,15 +21,15 @@ namespace DealtHands.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
-            Token = _educatorService.GeneratePasswordResetToken(Email);
+            Token = await _userService.GeneratePasswordResetTokenAsync(Email);
 
             if (Token != null)
             {
                 TokenGenerated = true;
                 // TODO: Email the token link to the educator
-                // For now, just display it
+                // For now, just display it on the page
             }
 
             return Page();

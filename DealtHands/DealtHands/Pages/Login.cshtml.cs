@@ -6,11 +6,11 @@ namespace DealtHands.Pages
 {
     public class LoginModel : PageModel
     {
-        private readonly EducatorService _educatorService;
+        private readonly UserService _userService;
 
-        public LoginModel(EducatorService educatorService)
+        public LoginModel(UserService userService)
         {
-            _educatorService = educatorService;
+            _userService = userService;
         }
 
         [BindProperty]
@@ -23,21 +23,23 @@ namespace DealtHands.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
-            var educator = _educatorService.Login(Email, Password);
+            var user = await _userService.AuthenticateEducatorAsync(Email, Password);
 
-            if (educator == null)
+            if (user == null)
             {
                 ErrorMessage = "Invalid email or password";
                 return Page();
             }
 
-            // Store educator ID in session
-            HttpContext.Session.SetInt32("EducatorId", educator.Id);
-            HttpContext.Session.SetString("EducatorName", educator.Name);
+            // Clear any leftover student session data
+            HttpContext.Session.Clear();
 
-            //return RedirectToPage("/CreateSession");
+            HttpContext.Session.SetString("UserId", user.UserId.ToString());
+            HttpContext.Session.SetString("EducatorName", user.Username);
+            HttpContext.Session.SetString("Role", "Educator");
+
             return RedirectToPage("/EducatorDashboard");
         }
     }

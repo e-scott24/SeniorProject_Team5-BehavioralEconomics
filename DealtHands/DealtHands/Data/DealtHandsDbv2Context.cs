@@ -28,10 +28,6 @@ public partial class DealtHandsDbv2Context : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=DealtHandsDBV2;Trusted_Connection=True;");
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Card>(entity =>
@@ -131,6 +127,12 @@ public partial class DealtHandsDbv2Context : DbContext
             entity.Property(e => e.JoinCode)
                 .HasMaxLength(12)
                 .IsUnicode(false);
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Difficulty)
+                .HasMaxLength(10)
+                .IsUnicode(false);
             entity.Property(e => e.PausedAt).HasColumnType("datetime");
             entity.Property(e => e.ResumedAt).HasColumnType("datetime");
             entity.Property(e => e.StartedAt).HasColumnType("datetime");
@@ -218,6 +220,12 @@ public partial class DealtHandsDbv2Context : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(40)
                 .IsUnicode(false);
+            entity.Property(e => e.PasswordResetToken)
+                .HasMaxLength(255)
+                .IsUnicode(false);
+            entity.Property(e => e.PasswordResetExpires)
+                .HasColumnType("datetime");
+            entity.Property(e => e.IsEducator).HasDefaultValue(false);
         });
 
         OnModelCreatingPartial(modelBuilder);

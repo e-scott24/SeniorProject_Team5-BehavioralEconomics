@@ -16,8 +16,8 @@ namespace DealtHands.Services
 
         // Constants for the DealtHands game
         private const long DEALTHANDS_GAME_ID = 1; // The Game.GameId for DealtHands
-        private static readonly string[] ROUND_TYPES = new[] 
-        { 
+        private static readonly string[] ROUND_TYPES = new[]
+        {
             "Career",           // Round 1
             "StudentLoan",      // Round 2
             "Transportation",   // Round 3
@@ -37,11 +37,11 @@ namespace DealtHands.Services
         /// Creates a new game session hosted by the specified educator/user.
         /// </summary>
         /// <param name="hostUserId">The UserId of the educator hosting this session</param>
-        /// <param name="sessionName">Optional friendly name for the session (not used in V2, kept for compatibility)</param>
+        /// <param name="sessionName">Optional friendly name for the session</param>
+        /// <param name="difficulty">"Easy", "Medium", or "Hard" — affects game changer probability</param>
         /// <returns>The created GameSession with a unique JoinCode</returns>
-        public async Task<GameSession> CreateSessionAsync(long hostUserId, string? sessionName = null)
+        public async Task<GameSession> CreateSessionAsync(long hostUserId, string? sessionName = null, string? difficulty = null)
         {
-            // Generate a unique 5-digit join code
             string joinCode;
             do
             {
@@ -54,6 +54,8 @@ namespace DealtHands.Services
                 GameId = DEALTHANDS_GAME_ID,
                 HostUserId = hostUserId,
                 JoinCode = joinCode,
+                Name = sessionName,
+                Difficulty = difficulty,
                 Status = "Waiting",
                 CurrentRoundNumber = 1,
                 CreatedAt = DateTime.UtcNow,
@@ -141,6 +143,16 @@ namespace DealtHands.Services
                 .FirstOrDefaultAsync(s => s.JoinCode == joinCode && s.IsActive);
         }
 
+        /// <summary>
+        /// Gets a session by its primary key.
+        /// </summary>
+        public async Task<GameSession?> GetSessionByIdAsync(long gameSessionId)
+        {
+            return await _context.GameSessions
+                .Include(s => s.Game)
+                .FirstOrDefaultAsync(s => s.GameSessionId == gameSessionId);
+        }
+
         #endregion
 
         #region Round Management
@@ -157,14 +169,12 @@ namespace DealtHands.Services
             if (session == null)
                 throw new InvalidOperationException("Session not found");
 
-            // Determine the round type based on current round number
             byte roundNumber = session.CurrentRoundNumber;
             if (roundNumber < 1 || roundNumber > ROUND_TYPES.Length)
                 throw new InvalidOperationException($"Invalid round number: {roundNumber}");
 
             string roundType = ROUND_TYPES[roundNumber - 1];
 
-            // Create the round
             var round = new GameRound
             {
                 GameSessionId = gameSessionId,
@@ -196,19 +206,73 @@ namespace DealtHands.Services
             round.Status = "Closed";
             round.ClosedAt = DateTime.UtcNow;
 
-            // Update session's current round number
             var session = await _context.GameSessions.FindAsync(round.GameSessionId);
             if (session != null)
-            {
                 session.CurrentRoundNumber++;
-            }
 
             await _context.SaveChangesAsync();
             return true;
         }
 
         /// <summary>
-        /// Gets all non-responders for a closed round (players who didn't submit).
+        /// Assigns a card to a player who joined after the round was already opened.
+        /// </summary>
+        public async Task AssignLatePlayerAsync(long userId, GameRound round, long gameSessionId)
+        {
+            var session = await _context.GameSessions
+                .Include(s => s.Game)
+                .FirstOrDefaultAsync(s => s.GameSessionId == gameSessionId);
+
+            if (session == null) return;
+
+            var availableCards = await _context.Cards
+                .Where(c => c.RoundType == round.RoundType
+                         && c.CardType == "RoundCard"
+                         && c.IsActive)
+                .ToListAsync();
+
+            if (!availableCards.Any()) return;
+
+            var assignedCard = availableCards[_random.Next(availableCards.Count)];
+
+            var ugc = new Ugc
+            {
+                UserId = userId,
+                CardId = assignedCard.CardId,
+                GameRoundId = round.GameRoundId,
+                GameSessionId = gameSessionId,
+                AssignedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.Ugcs.Add(ugc);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Returns the currently open round for a session, or null if no round is open.
+        /// </summary>
+        public async Task<GameRound?> GetOpenRoundAsync(long gameSessionId)
+        {
+            return await _context.GameRounds
+                .FirstOrDefaultAsync(r => r.GameSessionId == gameSessionId && r.Status == "Open");
+        }
+
+        /// <summary>
+        /// Returns true if every player assigned to a round has submitted their choice.
+        /// </summary>
+        public async Task<bool> AreAllPlayersSubmittedAsync(long gameRoundId)
+        {
+            var totalAssigned = await _context.Ugcs
+                .CountAsync(u => u.GameRoundId == gameRoundId && u.Card.CardType == "RoundCard");
+            var totalSubmitted = await _context.Ugcs
+                .CountAsync(u => u.GameRoundId == gameRoundId && u.SubmittedAt != null && u.Card.CardType == "RoundCard");
+
+            return totalAssigned > 0 && totalSubmitted >= totalAssigned;
+        }
+
+        /// <summary>
+        /// Gets all non-responders for a round (players who didn't submit).
         /// </summary>
         public async Task<List<Ugc>> GetNonRespondersAsync(long gameRoundId)
         {
@@ -225,7 +289,6 @@ namespace DealtHands.Services
 
         /// <summary>
         /// Assigns cards to players for a specific round.
-        /// Uses the game's Mode to determine how cards are assigned.
         /// </summary>
         private async Task AssignCardsToPlayersAsync(long gameRoundId, long gameSessionId, string roundType, List<long> userIds)
         {
@@ -236,10 +299,9 @@ namespace DealtHands.Services
             if (session == null)
                 return;
 
-            // Get available cards for this round type
             var availableCards = await _context.Cards
-                .Where(c => c.RoundType == roundType 
-                         && c.CardType == "RoundCard" 
+                .Where(c => c.RoundType == roundType
+                         && c.CardType == "RoundCard"
                          && c.IsActive)
                 .ToListAsync();
 
@@ -250,18 +312,14 @@ namespace DealtHands.Services
             {
                 Card assignedCard;
 
-                // Assign card based on game mode
                 switch (session.Game.Mode)
                 {
                     case "RandomAssigned":
-                        // Pick a random card
                         assignedCard = availableCards[_random.Next(availableCards.Count)];
                         break;
 
                     case "ChooseFromFour":
-                        // For ChooseFromFour, we assign a placeholder initially
-                        // The actual card will be set when the player makes their choice
-                        // For now, assign the first card as a placeholder
+                        // Placeholder — actual card set when player submits their choice
                         assignedCard = availableCards.First();
                         break;
 
@@ -290,39 +348,47 @@ namespace DealtHands.Services
         }
 
         /// <summary>
-        /// Gets the 4 cards for a player to choose from in ChooseFromFour mode.
+        /// Gets 4 random cards for a player to choose from in ChooseFromFour mode.
         /// </summary>
         public async Task<List<Card>> GetChoiceCardsForRoundAsync(string roundType, int count = 4)
         {
             var cards = await _context.Cards
-                .Where(c => c.RoundType == roundType 
-                         && c.CardType == "RoundCard" 
+                .Where(c => c.RoundType == roundType
+                         && c.CardType == "RoundCard"
                          && c.IsActive)
                 .ToListAsync();
 
-            // Shuffle and take the requested count
             return cards.OrderBy(x => Guid.NewGuid()).Take(count).ToList();
         }
 
         /// <summary>
-        /// Processes a player's card choice (for ChooseFromFour mode).
-        /// Updates the UGC record with the chosen card.
+        /// Gets the player's pre-assigned UGC record for the current round (RandomAssigned mode).
+        /// </summary>
+        public async Task<Ugc?> GetPlayerRoundUgcAsync(long userId, long gameRoundId)
+        {
+            return await _context.Ugcs
+                .Include(u => u.Card)
+                .FirstOrDefaultAsync(u => u.UserId == userId
+                    && u.GameRoundId == gameRoundId
+                    && u.Card.CardType == "RoundCard");
+        }
+
+        /// <summary>
+        /// Processes a player's card choice.
+        /// For ChooseFromFour, updates the UGC with the chosen card.
+        /// SubmittedAmount should be positive for Career (income) and negative for all other rounds (expenses).
         /// </summary>
         public async Task<bool> SubmitPlayerChoiceAsync(long userId, long gameRoundId, int chosenCardId, decimal submittedAmount)
         {
-            // Find the existing UGC record for this user/round
             var ugc = await _context.Ugcs
                 .FirstOrDefaultAsync(u => u.UserId == userId && u.GameRoundId == gameRoundId);
 
             if (ugc == null || ugc.SubmittedAt != null)
                 return false; // Already submitted or doesn't exist
 
-            // Update the UGC record with the chosen card
             ugc.CardId = chosenCardId;
             ugc.SubmittedAmount = submittedAmount;
             ugc.SubmittedAt = DateTime.UtcNow;
-
-            // Calculate running total
             ugc.RunningTotal = await CalculateRunningTotalAsync(userId, ugc.GameSessionId, submittedAmount);
 
             await _context.SaveChangesAsync();
@@ -331,14 +397,14 @@ namespace DealtHands.Services
 
         /// <summary>
         /// Calculates the running total for a player in a session.
-        /// This is the cumulative score across all rounds.
+        /// Running total represents the player's net monthly position after all rounds.
+        /// Career round adds income; all other rounds subtract expenses.
         /// </summary>
         private async Task<decimal> CalculateRunningTotalAsync(long userId, long gameSessionId, decimal currentRoundAmount)
         {
-            // Get the most recent submitted UGC record for this player in this session
             var priorUgc = await _context.Ugcs
-                .Where(u => u.UserId == userId 
-                         && u.GameSessionId == gameSessionId 
+                .Where(u => u.UserId == userId
+                         && u.GameSessionId == gameSessionId
                          && u.SubmittedAt != null
                          && u.RunningTotal != null)
                 .OrderByDescending(u => u.SubmittedAt)
@@ -353,14 +419,28 @@ namespace DealtHands.Services
         #region Game Changers
 
         /// <summary>
-        /// Assigns a random game changer card to a player.
+        /// Returns whether a game changer should be assigned this round, based on difficulty.
+        /// </summary>
+        public bool ShouldAssignGameChanger(string? difficulty)
+        {
+            int chance = difficulty switch
+            {
+                "Easy" => 30,
+                "Medium" => 60,
+                "Hard" => 90,
+                _ => 50
+            };
+            return _random.Next(100) < chance;
+        }
+
+        /// <summary>
+        /// Assigns a random game changer card to a player for the current round.
         /// </summary>
         public async Task<Ugc?> AssignGameChangerAsync(long userId, long gameRoundId, long gameSessionId, string roundType)
         {
-            // Get a random game changer card for this round type
             var gameChangerCard = await _context.Cards
-                .Where(c => c.CardType == "GameChangerCard" 
-                         && c.RoundType == roundType 
+                .Where(c => c.CardType == "GameChangerCard"
+                         && c.RoundType == roundType
                          && c.IsActive)
                 .OrderBy(x => Guid.NewGuid())
                 .FirstOrDefaultAsync();
@@ -368,7 +448,6 @@ namespace DealtHands.Services
             if (gameChangerCard == null)
                 return null;
 
-            // Parse the FieldData to get impact
             decimal impact = gameChangerCard.MonthlyAmount ?? 0;
 
             var ugc = new Ugc
@@ -378,8 +457,8 @@ namespace DealtHands.Services
                 GameRoundId = gameRoundId,
                 GameSessionId = gameSessionId,
                 AssignedAt = DateTime.UtcNow,
-                SubmittedAmount = impact,  // Auto-applied
-                SubmittedAt = DateTime.UtcNow,  // Instant submission
+                SubmittedAmount = impact,
+                SubmittedAt = DateTime.UtcNow, // Auto-applied
                 RunningTotal = await CalculateRunningTotalAsync(userId, gameSessionId, impact),
                 IsActive = true
             };
@@ -388,6 +467,82 @@ namespace DealtHands.Services
             await _context.SaveChangesAsync();
 
             return ugc;
+        }
+
+        /// <summary>
+        /// Gets the game changer UGC assigned to a player for a specific round, if any.
+        /// </summary>
+        public async Task<Ugc?> GetPlayerGameChangerAsync(long userId, long gameRoundId)
+        {
+            return await _context.Ugcs
+                .Include(u => u.Card)
+                .FirstOrDefaultAsync(u => u.UserId == userId
+                    && u.GameRoundId == gameRoundId
+                    && u.Card.CardType == "GameChangerCard");
+        }
+
+        #endregion
+
+        #region Financial State
+
+        /// <summary>
+        /// Computes the current financial state for a player based on their UGC history.
+        /// Career round = monthly income. All other rounds = monthly expenses.
+        /// Game changers affect the available balance but not recurring income/expenses.
+        /// </summary>
+        public async Task<PlayerFinancialState> GetPlayerFinancialStateAsync(long userId, long gameSessionId)
+        {
+            var ugcs = await _context.Ugcs
+                .Include(u => u.Card)
+                .Include(u => u.GameRound)
+                .Where(u => u.UserId == userId
+                    && u.GameSessionId == gameSessionId
+                    && u.SubmittedAt != null)
+                .ToListAsync();
+
+            decimal monthlyIncome = 0;
+            decimal monthlyExpenses = 0;
+            decimal gameChangerBalance = 0;
+            byte currentRound = 0;
+
+            foreach (var ugc in ugcs)
+            {
+                var amount = ugc.SubmittedAmount ?? 0;
+                var roundType = ugc.GameRound?.RoundType;
+
+                if (ugc.Card?.CardType == "GameChangerCard")
+                {
+                    // Game changers are one-time balance adjustments
+                    gameChangerBalance += amount;
+                    continue;
+                }
+
+                if (roundType == "Career")
+                    monthlyIncome = amount; // Career sets monthly income (positive)
+                else
+                    monthlyExpenses += Math.Abs(amount); // All other rounds are monthly expenses
+
+                if (ugc.GameRound != null && ugc.GameRound.RoundNumber > currentRound)
+                    currentRound = ugc.GameRound.RoundNumber;
+            }
+
+            decimal available = monthlyIncome - monthlyExpenses;
+            decimal percentageAvailable = monthlyIncome > 0 ? (available / monthlyIncome) * 100 : 0;
+
+            string financialHealth = percentageAvailable >= 30 ? "Healthy"
+                : percentageAvailable >= 10 ? "Struggling"
+                : "Critical";
+
+            return new PlayerFinancialState
+            {
+                Salary = monthlyIncome * 12,
+                MonthlyIncome = monthlyIncome,
+                MonthlyExpenses = monthlyExpenses,
+                Available = available,
+                GameChangerBalance = gameChangerBalance,
+                FinancialHealth = financialHealth,
+                CurrentRound = currentRound
+            };
         }
 
         #endregion
@@ -484,6 +639,17 @@ namespace DealtHands.Services
         public decimal? SubmittedAmount { get; set; }
         public decimal? RunningTotal { get; set; }
         public bool IsSubmitted { get; set; }
+    }
+
+    public class PlayerFinancialState
+    {
+        public decimal Salary { get; set; }           // Annual estimate (MonthlyIncome * 12)
+        public decimal MonthlyIncome { get; set; }    // From Career round
+        public decimal MonthlyExpenses { get; set; }  // Sum of all non-Career round costs
+        public decimal Available { get; set; }         // MonthlyIncome - MonthlyExpenses
+        public decimal GameChangerBalance { get; set; } // One-time game changer adjustments
+        public string FinancialHealth { get; set; } = "Healthy"; // Healthy / Struggling / Critical
+        public byte CurrentRound { get; set; }        // Most recently completed round number
     }
 
     #endregion

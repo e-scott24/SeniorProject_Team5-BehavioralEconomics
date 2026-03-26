@@ -1,5 +1,6 @@
 ﻿@page
 @model DealtHands.Pages.EducatorDashboardModel
+
 @{
     ViewData["Title"] = "Educator Dashboard";
 }
@@ -35,13 +36,13 @@
                 {
                     <tr>
                         <td>@session.Name</td>
-                        <td><strong>@session.Code</strong></td>
-                        <td>@session.GameMode</td>
-                        <td>@session.Players.Count / @session.MaxPlayers</td>
-                        <td>@session.CurrentRound / 5</td>
+                        <td><strong>@session.JoinCode</strong></td>
+                        <td>@session.Game?.Mode</td>
+                        <td>SessionTracker / @session.Game?.MaxPlayers</td>
+                        <td>@session.CurrentRoundNumber / 5</td>
                         <td>@session.CreatedAt.ToShortDateString()</td>
                         <td>
-                            <a href="/Lobby?sessionCode=@session.Code" class="btn btn-sm btn-primary">Resume</a>
+                            <a href="/Lobby?sessionCode=@session.JoinCode" class="btn btn-sm btn-primary">Resume</a>
                         </td>
                     </tr>
                 }
@@ -71,11 +72,11 @@
                 {
                     <tr>
                         <td>@session.Name</td>
-                        <td>@session.GameMode</td>
-                        <td>@session.Players.Count</td>
+                        <td>@session.Game?.Mode</td>
+                        <!-- <td> session.Players.Count</td> -->
                         <td>@session.CreatedAt.ToShortDateString()</td>
                         <td>
-                            <a href="/SessionReport?sessionId=@session.Id" class="btn btn-sm btn-success">View Report</a>
+                            <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
                         </td>
                     </tr>
                 }

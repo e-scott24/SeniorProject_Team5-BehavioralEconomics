@@ -1,4 +1,4 @@
-using DealtHands.Models;
+using DealtHands.ModelsV2;
 using DealtHands.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,82 +7,132 @@ namespace DealtHands.Pages
 {
     public class RoundModel : PageModel
     {
-        private readonly GameEngine _gameEngine;
-        private readonly PlayerService _playerService;
-        private readonly SessionService _sessionService;
+        private readonly GameSessionService _gameSessionService;
+        private readonly SessionTracker _sessionTracker;
 
-        public RoundModel(GameEngine gameEngine, PlayerService playerService, SessionService sessionService)
+        public RoundModel(GameSessionService gameSessionService, SessionTracker sessionTracker)
         {
-            _gameEngine = gameEngine;
-            _playerService = playerService;
-            _sessionService = sessionService;
+            _gameSessionService = gameSessionService;
+            _sessionTracker = sessionTracker;
         }
 
-        [BindProperty(SupportsGet = true)]
-        public int PlayerId { get; set; }
-
-        public Player Player { get; set; }
-        public RoundConfig Round { get; set; }
+        public List<Card> Cards { get; set; } = new List<Card>();
+        public Ugc AssignedCard { get; set; }
+        public GameRound CurrentRound { get; set; }
+        public GameSession Session { get; set; }
+        public PlayerFinancialState FinancialState { get; set; }
         public string WaitingMessage { get; set; }
 
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
-            Player = _playerService.GetPlayer(PlayerId);
-            if (Player == null) return RedirectToPage("/JoinSession");
+            // Hard stop — educators never play rounds
+            if (HttpContext.Session.GetString("Role") == "Educator")
+            {
+                var code = HttpContext.Session.GetString("SessionCode");
+                return !string.IsNullOrEmpty(code)
+                    ? RedirectToPage("/Lobby", new { sessionCode = code })
+                    : RedirectToPage("/EducatorDashboard");
+            }
 
-            var session = _sessionService.GetSessionById(Player.SessionId);
-            if (session == null) return RedirectToPage("/JoinSession");
+            // Must be a student with valid session data
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+                return RedirectToPage("/JoinSession");
+            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+                return RedirectToPage("/JoinSession");
 
-            Round = _gameEngine.GetRoundConfig(session.CurrentRound);
-            if (Round == null) return RedirectToPage("/Results", new { playerId = PlayerId });
+            Session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
+            if (Session == null) return RedirectToPage("/JoinSession");
 
-            //Show waiting message if other players have not completed yet
+            if (Session.Status == "Completed")
+                return RedirectToPage("/Results");
+
+            if (Session.Status == "Paused")
+                return RedirectToPage("/JoinSession");
+
+            CurrentRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
+            if (CurrentRound == null)
+            {
+                WaitingMessage = "Waiting for the educator to open the next round...";
+                FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
+                return Page();
+            }
+
+            // Check if this player already submitted for this round
+            var existingUgc = await _gameSessionService.GetPlayerRoundUgcAsync(userId, CurrentRound.GameRoundId);
+            if (existingUgc?.SubmittedAt != null)
+            {
+                WaitingMessage = "Choice submitted! Waiting for the educator to advance to the next round...";
+                FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
+                return Page();
+            }
+
+            // Player wasn't in the tracker when the round opened — assign them a card now
+            if (existingUgc == null)
+            {
+                _sessionTracker.AddPlayer(gameSessionId, userId);
+                await _gameSessionService.AssignLatePlayerAsync(userId, CurrentRound, gameSessionId);
+                existingUgc = await _gameSessionService.GetPlayerRoundUgcAsync(userId, CurrentRound.GameRoundId);
+            }
+
+            if (Session.Game?.Mode == "RandomAssigned")
+                AssignedCard = existingUgc;
+            else
+                Cards = await _gameSessionService.GetChoiceCardsForRoundAsync(CurrentRound.RoundType);
+
+            FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
             WaitingMessage = TempData["WaitingMessage"] as string;
 
             return Page();
         }
 
-        public IActionResult OnPostSelectChoice(string choiceDescription, decimal? amount)
+        public async Task<IActionResult> OnPostSelectChoiceAsync(int chosenCardId, decimal submittedAmount)
         {
-            Player = _playerService.GetPlayer(PlayerId);
-            if (Player == null) return RedirectToPage("/JoinSession");
-
-            var session = _sessionService.GetSessionById(Player.SessionId);
-            if (session == null) return RedirectToPage("/JoinSession");
-
-            Round = _gameEngine.GetRoundConfig(session.CurrentRound);
-            if (Round == null) return RedirectToPage("/Results", new { playerId = PlayerId });
-
-            // Determine cost/totalPrice based on whether round requires numeric input
-            decimal monthlyCost = Round.RequiresAmount ? (amount ?? 0) : 0;
-            decimal? totalPrice = Round.RequiresAmount ? amount : null;
-
-            // Record the player's choice
-            _gameEngine.RecordChoice(
-                playerId: PlayerId,
-                roundNumber: Round.RoundNumber,
-                roundType: Round.RoundType,
-                choiceDescription: choiceDescription,
-                monthlyCost: monthlyCost,
-                totalPrice: totalPrice
-            );
-
-            // Check if all players are done with this round
-            bool allReady = _gameEngine.AreAllPlayersReady(session.Id, Round.RoundNumber);
-
-            if (allReady)
+            // Hard stop — educators never post choices
+            if (HttpContext.Session.GetString("Role") == "Educator")
             {
-                // Advance session to next round
-                _gameEngine.AdvanceRound(session.Id);
-
-                // Redirect to next round (generic Round page)
-                var nextRound = _gameEngine.GetRoundPage(session.CurrentRound);
-                return RedirectToPage(nextRound, new { playerId = PlayerId });
+                var code = HttpContext.Session.GetString("SessionCode");
+                return !string.IsNullOrEmpty(code)
+                    ? RedirectToPage("/Lobby", new { sessionCode = code })
+                    : RedirectToPage("/EducatorDashboard");
             }
 
-            // If other players are not ready, stay on this page
-            TempData["WaitingMessage"] = "Waiting for other players...";
-            return Page();
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+                return RedirectToPage("/JoinSession");
+            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+                return RedirectToPage("/JoinSession");
+
+            Session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
+            if (Session == null) return RedirectToPage("/JoinSession");
+
+            CurrentRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
+            if (CurrentRound == null) return RedirectToPage("/Round");
+
+            // Career = income (positive), all other rounds = expenses (negative)
+            decimal adjustedAmount = CurrentRound.RoundType == "Career"
+                ? submittedAmount
+                : -submittedAmount;
+
+            bool success = await _gameSessionService.SubmitPlayerChoiceAsync(
+                userId, CurrentRound.GameRoundId, chosenCardId, adjustedAmount);
+
+            if (!success)
+            {
+                TempData["WaitingMessage"] = "Submission failed or already submitted.";
+                return RedirectToPage("/Round");
+            }
+
+            // Check if a game changer should be assigned
+            if (_gameSessionService.ShouldAssignGameChanger(Session.Difficulty))
+            {
+                var gc = await _gameSessionService.AssignGameChangerAsync(
+                    userId, CurrentRound.GameRoundId, gameSessionId, CurrentRound.RoundType);
+
+                if (gc != null)
+                    return RedirectToPage("/GameChanger");
+            }
+
+            TempData["WaitingMessage"] = "Choice submitted! Waiting for the educator to advance to the next round...";
+            return RedirectToPage("/Round");
         }
     }
 }

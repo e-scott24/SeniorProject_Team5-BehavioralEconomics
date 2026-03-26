@@ -6,12 +6,11 @@ namespace DealtHands.Pages
 {
     public class CreateSessionModel : PageModel
     {
-        private readonly SessionService _sessionService;
+        private readonly GameSessionService _gameSessionService;
 
-        // Constructor injection - ASP.NET automatically provides the service
-        public CreateSessionModel(SessionService sessionService)
+        public CreateSessionModel(GameSessionService gameSessionService)
         {
-            _sessionService = sessionService;
+            _gameSessionService = gameSessionService;
         }
 
         [BindProperty]
@@ -26,23 +25,26 @@ namespace DealtHands.Pages
         [BindProperty]
         public int MaxPlayers { get; set; } = 35;
 
-        public void OnGet()
-        {
-            // Page loads
-        }
+        public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid) return Page();
 
-            // Get educator ID from session (if needed)
-            int? educatorId = HttpContext.Session.GetInt32("EducatorId");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+                return RedirectToPage("/Login");
 
-            // Use service to create session
-            var session = _sessionService.CreateSession(SessionName, GameMode, Difficulty, MaxPlayers);
+            // Confirm educator role is set — should already be set from login
+            // but explicitly re-set here to be safe
+            HttpContext.Session.SetString("Role", "Educator");
 
-            // Redirect with session code
-            return RedirectToPage("/Lobby", new { sessionCode = session.Code });
+            var session = await _gameSessionService.CreateSessionAsync(userId, SessionName, Difficulty);
+
+            // Store session info for the educator's control panel
+            HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
+            HttpContext.Session.SetString("SessionCode", session.JoinCode);
+
+            return RedirectToPage("/Lobby", new { sessionCode = session.JoinCode });
         }
     }
 }

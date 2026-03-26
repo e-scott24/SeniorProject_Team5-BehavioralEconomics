@@ -30,37 +30,34 @@ namespace DealtHands.Controllers
     [Route("api/[controller]")]
     public class FinancialsController : ControllerBase
     {
-        private readonly PlayerService _playerService;
+        private readonly GameSessionService _gameSessionService;
 
-        public FinancialsController(PlayerService playerService)
+        public FinancialsController(GameSessionService gameSessionService)
         {
-            _playerService = playerService;
+            _gameSessionService = gameSessionService;
         }
 
         [HttpGet]
-        public IActionResult Get(int? playerId)
+        public async Task<IActionResult> Get()
         {
-            // Difficulty still comes from session (or default to easy)
             var difficulty = HttpContext.Session.GetString("difficulty") ?? "easy";
 
-            if (playerId.HasValue)
+            if (long.TryParse(HttpContext.Session.GetString("UserId"), out long userId) &&
+                long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
             {
-                var player = _playerService.GetPlayer(playerId.Value);
-                if (player != null)
+                var state = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
+
+                return Ok(new
                 {
-                    // Use REAL player data instead of hardcoded values
-                    return Ok(new
-                    {
-                        difficulty,
-                        monthlyIncome = player.MonthlyIncome,      // From player's career choice
-                        checkingBalance = player.Savings,          // From player's savings
-                        totalDebt = player.TotalDebt,             // From player's loans
-                        emergencyFundSaved = player.Savings       // Same as checking balance
-                    });
-                }
+                    difficulty,
+                    monthlyIncome = state.MonthlyIncome,
+                    checkingBalance = state.Available,
+                    totalDebt = 0, // V2 schema does not track total debt separately
+                    emergencyFundSaved = state.Available
+                });
             }
 
-            // Fallback if no player (educator viewing calculator)
+            // Fallback if no player session (educator viewing calculator)
             return Ok(new
             {
                 difficulty,

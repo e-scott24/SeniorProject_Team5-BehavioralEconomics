@@ -1,17 +1,16 @@
 using DealtHands.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace DealtHands.Pages
 {
     public class ResetPasswordModel : PageModel
     {
-        private readonly EducatorService _educatorService;
+        private readonly UserService _userService;
 
-        public ResetPasswordModel(EducatorService educatorService)
+        public ResetPasswordModel(UserService userService)
         {
-            _educatorService = educatorService;
+            _userService = userService;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -27,7 +26,7 @@ namespace DealtHands.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             if (NewPassword != ConfirmPassword)
             {
@@ -35,12 +34,10 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            bool success = _educatorService.ResetPassword(Token, NewPassword);
+            bool success = await _userService.ResetPasswordWithTokenAsync(Token, NewPassword);
 
             if (success)
-            {
                 return RedirectToPage("/Login");
-            }
 
             Message = "Invalid or expired reset link";
             return Page();

@@ -1,30 +1,46 @@
 ﻿@page
 @model DealtHands.Pages.RoundModel
 @{
-    ViewData["Title"] = Model.Round?.RoundName ?? "Round";
+    ViewData["Title"] = Model.CurrentRound?.RoundType ?? "Round";
 }
 
-<h2>@Model.Round?.RoundName</h2>
+<h2>ROUND @Model.CurrentRound?.RoundNumber: @Model.CurrentRound?.RoundType?.ToUpper()</h2>
 
-@if (TempData["WaitingMessage"] != null)
+@if (Model.FinancialState != null)
 {
-    <p>@TempData["WaitingMessage"]</p>
+    <div class="alert alert-info">
+        <strong>Salary:</strong> $@Model.FinancialState.Salary.ToString("N0") |
+        <strong>Monthly:</strong> $@Model.FinancialState.MonthlyIncome.ToString("N0") |
+        <strong>Available:</strong> $@Model.FinancialState.Available.ToString("N0") |
+        <strong>Financial Health:</strong> @Model.FinancialState.FinancialHealth
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.WaitingMessage))
+{
+    <p>@Model.WaitingMessage</p>
+}
+else if (Model.CurrentRound == null)
+{
+    <p>Waiting for the educator to open the round...</p>
 }
 else
 {
-    <form method="post">
-        <select name="choiceDescription" required>
-            @foreach (var c in Model.Round.Choices)
-            {
-                <option value="@c">@c</option>
-            }
-        </select>
-
-        @if (Model.Round.RequiresAmount)
+    <form method="post" asp-page-handler="SelectChoice">
+        @foreach (var card in Model.Cards)
         {
-            <input type="number" step="0.01" name="amount" placeholder="Enter amount" required />
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>@card.Title</h5>
+                    <p>@card.Description</p>
+                    <p><strong>$@card.MonthlyAmount?.ToString("N0") / month</strong></p>
+                    <button type="submit" name="chosenCardId" value="@card.CardId"
+                            onclick="document.getElementById('submittedAmount').value = '@card.MonthlyAmount'">
+                        Select
+                    </button>
+                </div>
+            </div>
         }
-
-        <button type="submit">Submit</button>
+        <input type="hidden" id="submittedAmount" name="submittedAmount" value="0" />
     </form>
 }

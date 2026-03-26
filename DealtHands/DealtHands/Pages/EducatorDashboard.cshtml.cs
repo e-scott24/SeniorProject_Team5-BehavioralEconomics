@@ -1,38 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using DealtHands.Services;
-using DealtHands.Models;
+using DealtHands.ModelsV2;
 
 namespace DealtHands.Pages
 {
     public class EducatorDashboardModel : PageModel
     {
-        private readonly EducatorService _educatorService;
+        private readonly UserService _userService;
 
-        public EducatorDashboardModel(EducatorService educatorService)
+        public EducatorDashboardModel(UserService userService)
         {
-            _educatorService = educatorService;
+            _userService = userService;
         }
 
-        public List<Session> ActiveSessions { get; set; } = new List<Session>();
-        public List<Session> CompletedSessions { get; set; } = new List<Session>();
+        public List<GameSession> ActiveSessions { get; set; } = new List<GameSession>();
+        public List<GameSession> CompletedSessions { get; set; } = new List<GameSession>();
 
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
-            // Check if educator is logged in
-            int? educatorId = HttpContext.Session.GetInt32("EducatorId");
-
-            if (!educatorId.HasValue)
-            {
+            if (HttpContext.Session.GetString("Role") != "Educator")
                 return RedirectToPage("/Login");
-            }
 
-            // Get all sessions for this educator
-            var allSessions = _educatorService.GetEducatorSessions(educatorId.Value);
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+                return RedirectToPage("/Login");
 
-            // Split into active and completed
-            ActiveSessions = allSessions.Where(s => !s.IsCompleted && s.IsActive).ToList();
-            CompletedSessions = allSessions.Where(s => s.IsCompleted || !s.IsActive).ToList();
+            var allSessions = await _userService.GetEducatorSessionsAsync(userId);
+
+            // Active = anything not completed and still active
+            ActiveSessions = allSessions.Where(s => s.Status != "Completed" && s.IsActive).ToList();
+
+            // Completed = finished or manually cancelled
+            CompletedSessions = allSessions.Where(s => s.Status == "Completed" || !s.IsActive).ToList();
 
             return Page();
         }

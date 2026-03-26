@@ -6,11 +6,11 @@ namespace DealtHands.Pages
 {
     public class RegisterModel : PageModel
     {
-        private readonly EducatorService _educatorService;
+        private readonly UserService _userService;
 
-        public RegisterModel(EducatorService educatorService)
+        public RegisterModel(UserService userService)
         {
-            _educatorService = educatorService;
+            _userService = userService;
         }
 
         [BindProperty]
@@ -30,8 +30,7 @@ namespace DealtHands.Pages
         {
             try
             {
-                // Use the async service method which returns null if duplicate
-                var user = await _educatorService.RegisterEducatorAsync(Name, Email, Password);
+                var user = await _userService.RegisterEducatorAsync(Name, Email, Password);
 
                 if (user == null)
                 {
@@ -39,9 +38,12 @@ namespace DealtHands.Pages
                     return Page();
                 }
 
-                // Auto-login after registration
-                HttpContext.Session.SetInt32("EducatorId", user.Id);
-                HttpContext.Session.SetString("EducatorName", user.Name);
+                // Clear any leftover student session data
+                HttpContext.Session.Clear();
+
+                HttpContext.Session.SetString("UserId", user.UserId.ToString());
+                HttpContext.Session.SetString("EducatorName", user.Username);
+                HttpContext.Session.SetString("Role", "Educator");
 
                 return RedirectToPage("/EducatorDashboard");
             }

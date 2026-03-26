@@ -1,107 +1,245 @@
-using DealtHands.Models;
+using DealtHands.Data;
+using DealtHands.ModelsV2;
 using DealtHands.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace DealtHands.Pages
 {
     public class LobbyModel : PageModel
     {
-        private readonly SessionService _sessionService;
-        private readonly PlayerService _playerService;
+        private readonly GameSessionService _gameSessionService;
+        private readonly UserService _userService;
+        private readonly SessionTracker _sessionTracker;
+        private readonly DealtHandsDbv2Context _context;
 
-        public LobbyModel(SessionService sessionService, PlayerService playerService)
+        public LobbyModel(GameSessionService gameSessionService, UserService userService,
+                          SessionTracker sessionTracker, DealtHandsDbv2Context context)
         {
-            _sessionService = sessionService;
-            _playerService = playerService;
+            _gameSessionService = gameSessionService;
+            _userService = userService;
+            _sessionTracker = sessionTracker;
+            _context = context;
         }
 
-        public Player Player { get; set; }
-
+        public User Player { get; set; }
         public string SessionCode { get; set; }
-        public Session Session { get; set; }
-        public List<Player> Players { get; set; }
+        public GameSession Session { get; set; }
+        public List<User> Players { get; set; } = new List<User>();
         public bool IsEducator { get; set; }
-        public string SessionName { get; set; }
-        public string GameMode { get; set; }
-        public string Difficulty { get; set; }
-        public int MaxPlayers { get; set; }
 
-        public void OnGet(string sessionCode, int? playerId)
+        public async Task<IActionResult> OnGetAsync(string sessionCode)
         {
             SessionCode = sessionCode;
-            IsEducator = !playerId.HasValue;
+            Session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (Session == null) return RedirectToPage("/Index");
 
-            Session = _sessionService.GetSessionByCode(sessionCode);
+            // Role is set at login (Educator) or JoinSession (Student) — never inferred
+            IsEducator = HttpContext.Session.GetString("Role") == "Educator";
 
-            if (Session != null)
+            if (IsEducator)
             {
-                Players = _playerService.GetPlayersInSession(Session.Id);
+                // Verify the educator owns this session
+                if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId)
+                    || Session.HostUserId != hostId)
+                    return RedirectToPage("/EducatorDashboard");
 
-                // Get current player if student
-                if (playerId.HasValue)
-                {
-                    Player = _playerService.GetPlayer(playerId.Value);
-                }
+                // Ensure SessionCode is always in session for the educator
+                HttpContext.Session.SetString("SessionCode", sessionCode);
             }
-        }
-
-        // Fixed to redirect educator AND store educator's playerId
-        public IActionResult OnPostStartGame(string sessionCode)
-        {
-            var session = _sessionService.GetSessionByCode(sessionCode);
-            if (session == null) return RedirectToPage("/CreateSession");
-
-            // Start the session
-            _sessionService.StartSession(session.Id);
-
-
-            //Educator stays on lobby, players will be redirected to Round 1 via JS
-            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
-
-            /*
-            // Redirect educator to Round 1 (educator also needs to play)
-            return RedirectToPage("/Round1Career", new { sessionCode = sessionCode });
-            */
-        }
-
-        // API endpoint for fetching players
-        public JsonResult OnGetGetPlayers(string sessionCode)
-        {
-            var session = _sessionService.GetSessionByCode(sessionCode);
-            if (session == null) return new JsonResult(new List<object>());
-
-            var players = _playerService.GetPlayersInSession(session.Id);
-            return new JsonResult(players.Select(p => new { p.Name, p.Id }));
-        }
-
-        // Check if game has started
-        public JsonResult OnGetCheckGameStarted(string sessionCode)
-        {
-            var session = _sessionService.GetSessionByCode(sessionCode);
-            return new JsonResult(session?.IsStarted ?? false);
-        }
-
-        // Cancel Session handler
-        public IActionResult OnPostCancelSession(string sessionCode)
-        {
-            var session = _sessionService.GetSessionByCode(sessionCode);
-            if (session == null) return RedirectToPage("/Dashboard");
             else
             {
-                _sessionService.CancelSession(session.Id);
+                // Verify the student is actually in this session
+                if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long studentSessionId)
+                    || studentSessionId != Session.GameSessionId)
+                    return RedirectToPage("/JoinSession");
             }
-            return RedirectToPage("/Dashboard");
 
+            // Build player list from in-memory tracker
+            var playerIds = _sessionTracker.GetPlayers(Session.GameSessionId);
+            foreach (var pid in playerIds)
+            {
+                var user = await _userService.GetUserByIdAsync(pid);
+                if (user != null) Players.Add(user);
+            }
+
+            // Load student's own record for the player code display
+            if (!IsEducator && long.TryParse(HttpContext.Session.GetString("UserId"), out long uid))
+                Player = await _userService.GetUserByIdAsync(uid);
+
+            return Page();
         }
 
-        public JsonResult OnGetCheckSessionCancelled(string sessionCode)
+        // Educator: start the game and open Round 1
+        public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
         {
-            var session = _sessionService.GetSessionByCode(sessionCode);
-            return new JsonResult(session?.IsActive ?? true); // Return true if active, false if cancelled
+            if (HttpContext.Session.GetString("Role") != "Educator")
+                return RedirectToPage("/Index");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+                return RedirectToPage("/Login");
+
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return RedirectToPage("/CreateSession");
+            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+
+            HttpContext.Session.SetString("SessionCode", sessionCode);
+
+            await _gameSessionService.StartSessionAsync(session.GameSessionId);
+
+            var connectedUserIds = _sessionTracker.GetPlayers(session.GameSessionId);
+            if (connectedUserIds.Any())
+                await _gameSessionService.OpenRoundAsync(session.GameSessionId, connectedUserIds);
+
+            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
 
+        // Educator: close current round and open next
+        public async Task<IActionResult> OnPostCloseRoundAsync(string sessionCode)
+        {
+            if (HttpContext.Session.GetString("Role") != "Educator")
+                return RedirectToPage("/Index");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+                return RedirectToPage("/Login");
 
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
 
+            var round = await _gameSessionService.GetOpenRoundAsync(session.GameSessionId);
+            if (round != null)
+            {
+                await _gameSessionService.CloseRoundAsync(round.GameRoundId);
+
+                session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+
+                if (session.CurrentRoundNumber <= 5)
+                {
+                    var connectedUserIds = _sessionTracker.GetPlayers(session.GameSessionId);
+                    await _gameSessionService.OpenRoundAsync(session.GameSessionId, connectedUserIds);
+                }
+                else
+                {
+                    await _gameSessionService.EndSessionAsync(session.GameSessionId);
+                    return RedirectToPage("/EducatorDashboard");
+                }
+            }
+
+            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
+        }
+
+        // Educator: pause
+        public async Task<IActionResult> OnPostPauseSessionAsync(string sessionCode)
+        {
+            if (HttpContext.Session.GetString("Role") != "Educator")
+                return RedirectToPage("/Index");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+                return RedirectToPage("/Login");
+
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+
+            await _gameSessionService.PauseSessionAsync(session.GameSessionId);
+            return RedirectToPage("/EducatorDashboard");
+        }
+
+        // Educator: resume
+        public async Task<IActionResult> OnPostResumeSessionAsync(string sessionCode)
+        {
+            if (HttpContext.Session.GetString("Role") != "Educator")
+                return RedirectToPage("/Index");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+                return RedirectToPage("/Login");
+
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+
+            await _gameSessionService.ResumeSessionAsync(session.GameSessionId);
+            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
+        }
+
+        // Educator: cancel
+        public async Task<IActionResult> OnPostCancelSessionAsync(string sessionCode)
+        {
+            if (HttpContext.Session.GetString("Role") != "Educator")
+                return RedirectToPage("/Index");
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+                return RedirectToPage("/Login");
+
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+
+            await _gameSessionService.EndSessionAsync(session.GameSessionId);
+            return RedirectToPage("/EducatorDashboard");
+        }
+
+        // --- Polling endpoints ---
+
+        public async Task<JsonResult> OnGetGetPlayersAsync(string sessionCode)
+        {
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return new JsonResult(new List<object>());
+
+            var playerIds = _sessionTracker.GetPlayers(session.GameSessionId);
+            var players = new List<object>();
+            foreach (var pid in playerIds)
+            {
+                var user = await _userService.GetUserByIdAsync(pid);
+                if (user != null)
+                    players.Add(new { Name = user.Username, Id = user.UserId });
+            }
+            return new JsonResult(players);
+        }
+
+        // Students poll this to know when to redirect to /Round
+        public async Task<JsonResult> OnGetCheckGameStartedAsync(string sessionCode)
+        {
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            return new JsonResult(session?.Status == "InProgress");
+        }
+
+        // Students poll this to detect pause or cancellation
+        public async Task<JsonResult> OnGetCheckSessionStatusAsync(string sessionCode)
+        {
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            return new JsonResult(new
+            {
+                status = session?.Status ?? "Unknown",
+                isActive = session?.IsActive ?? false
+            });
+        }
+
+        // Educator control panel polls this
+        public async Task<JsonResult> OnGetRoundStatusAsync(string sessionCode)
+        {
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null) return new JsonResult(null);
+
+            var round = await _gameSessionService.GetOpenRoundAsync(session.GameSessionId);
+            if (round == null)
+                return new JsonResult(new { roundOpen = false });
+
+            var totalAssigned = await _context.Ugcs
+                .CountAsync(u => u.GameRoundId == round.GameRoundId
+                              && u.Card.CardType == "RoundCard");
+
+            var totalSubmitted = await _context.Ugcs
+                .CountAsync(u => u.GameRoundId == round.GameRoundId
+                              && u.SubmittedAt != null
+                              && u.Card.CardType == "RoundCard");
+
+            return new JsonResult(new
+            {
+                roundOpen = true,
+                roundNumber = round.RoundNumber,
+                roundType = round.RoundType,
+                submitted = totalSubmitted,
+                total = totalAssigned,
+                allSubmitted = totalAssigned > 0 && totalSubmitted >= totalAssigned
+            });
+        }
     }
 }

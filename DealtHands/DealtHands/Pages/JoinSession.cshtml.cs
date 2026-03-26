@@ -6,13 +6,16 @@ namespace DealtHands.Pages
 {
     public class JoinSessionModel : PageModel
     {
-        private readonly SessionService _sessionService;
-        private readonly PlayerService _playerService;
+        private readonly GameSessionService _gameSessionService;
+        private readonly UserService _userService;
+        private readonly SessionTracker _sessionTracker;
 
-        public JoinSessionModel(SessionService sessionService, PlayerService playerService)
+        public JoinSessionModel(GameSessionService gameSessionService, UserService userService,
+                                SessionTracker sessionTracker)
         {
-            _sessionService = sessionService;
-            _playerService = playerService;
+            _gameSessionService = gameSessionService;
+            _userService = userService;
+            _sessionTracker = sessionTracker;
         }
 
         [BindProperty]
@@ -21,6 +24,7 @@ namespace DealtHands.Pages
         [BindProperty]
         public string PlayerName { get; set; }
 
+        // Player code = the student's UserId from a previous join
         [BindProperty]
         public string PlayerCode { get; set; }
 
@@ -28,16 +32,15 @@ namespace DealtHands.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
-            // Validate session code
             if (string.IsNullOrEmpty(SessionCode))
             {
                 ErrorMessage = "Please enter a session code.";
                 return Page();
             }
 
-            var session = _sessionService.GetSessionByCode(SessionCode);
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(SessionCode);
 
             if (session == null)
             {
@@ -45,38 +48,72 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            // Returning player with code
+            if (session.Status != "Waiting" && session.Status != "Paused")
+            {
+                ErrorMessage = "This session has already started or is no longer accepting players.";
+                return Page();
+            }
+
+            // Returning player — PlayerCode is their UserId
             if (!string.IsNullOrEmpty(PlayerCode))
             {
-                var player = _playerService.JoinSession(session.Id, null, PlayerCode);
-
-                if (player == null)
+                if (!long.TryParse(PlayerCode, out long returningUserId))
                 {
-                    ErrorMessage = "Invalid player code for this session.";
+                    ErrorMessage = "Invalid player code.";
                     return Page();
                 }
 
-                return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = player.Id });
+                var returningUser = await _userService.GetUserByIdAsync(returningUserId);
+                if (returningUser == null)
+                {
+                    ErrorMessage = "Player code not found.";
+                    return Page();
+                }
+
+                // Clear ALL existing session data and set student identity fresh
+                HttpContext.Session.Clear();
+                HttpContext.Session.SetString("Role", "Student");
+                HttpContext.Session.SetString("UserId", returningUserId.ToString());
+                HttpContext.Session.SetString("PlayerName", returningUser.Username);
+                HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
+
+                _sessionTracker.AddPlayer(session.GameSessionId, returningUserId);
+
+                return RedirectToPage("/Lobby", new { sessionCode = SessionCode });
             }
 
-            // New player with name
+            // New player — only allowed on Waiting sessions
+            if (session.Status == "Paused")
+            {
+                ErrorMessage = "This session is paused. Use your Player Code to rejoin.";
+                return Page();
+            }
+
             if (string.IsNullOrEmpty(PlayerName))
             {
                 ErrorMessage = "Please enter your name.";
                 return Page();
             }
 
-            // Check if session is full
-            var currentPlayers = _playerService.GetPlayersInSession(session.Id);
-            if (currentPlayers.Count >= session.MaxPlayers)
+            int currentCount = _sessionTracker.GetPlayerCount(session.GameSessionId);
+            if (session.Game?.MaxPlayers.HasValue == true && currentCount >= session.Game.MaxPlayers.Value)
             {
                 ErrorMessage = "This session is full.";
                 return Page();
             }
 
-            var newPlayer = _playerService.JoinSession(session.Id, PlayerName);
+            var student = await _userService.CreateOrGetStudentAsync(PlayerName);
 
-            return RedirectToPage("/Lobby", new { sessionCode = SessionCode, playerId = newPlayer.Id });
+            // Clear ALL existing session data and set student identity fresh
+            HttpContext.Session.Clear();
+            HttpContext.Session.SetString("Role", "Student");
+            HttpContext.Session.SetString("UserId", student.UserId.ToString());
+            HttpContext.Session.SetString("PlayerName", student.Username);
+            HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
+
+            _sessionTracker.AddPlayer(session.GameSessionId, student.UserId);
+
+            return RedirectToPage("/Lobby", new { sessionCode = SessionCode });
         }
     }
 }
