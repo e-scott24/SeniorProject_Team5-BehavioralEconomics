@@ -26,22 +26,27 @@ namespace DealtHands.Pages
 
         public void OnGet() { }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             try
             {
-                var educator = _educatorService.Register(Email, Password, Name);
+                // Use the async service method which returns null if duplicate
+                var user = await _educatorService.RegisterEducatorAsync(Name, Email, Password);
+
+                if (user == null)
+                {
+                    ErrorMessage = "Username or email already exists";
+                    return Page();
+                }
 
                 // Auto-login after registration
-                HttpContext.Session.SetInt32("EducatorId", educator.Id);
-                HttpContext.Session.SetString("EducatorName", educator.Name);
+                HttpContext.Session.SetInt32("EducatorId", user.Id);
+                HttpContext.Session.SetString("EducatorName", user.Name);
 
-                //return RedirectToPage("/CreateSession");
                 return RedirectToPage("/EducatorDashboard");
             }
             catch (Exception ex)
             {
-                //ErrorMessage = "Registration failed. Email may already be in use.";
                 ErrorMessage = $"Error: {ex.Message} | Inner: {ex.InnerException?.Message}";
                 return Page();
             }

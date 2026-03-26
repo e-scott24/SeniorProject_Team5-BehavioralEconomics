@@ -15,7 +15,7 @@ namespace DealtHands.Services
         }
 
         /// <summary>
-        /// Register a new educator
+        /// Register a new educator (existing synchronous method retained)
         /// </summary>
         public Educator Register(string email, string password, string name)
         {
@@ -33,6 +33,35 @@ namespace DealtHands.Services
 
             _context.Educators.Add(educator);
             _context.SaveChanges();
+
+            return educator;
+        }
+
+        /// <summary>
+        /// Register a new educator (async) — returns null when username/email already exists
+        /// </summary>
+        public async Task<Educator?> RegisterEducatorAsync(string username, string email, string password)
+        {
+            // Check existing username (mapped to Name) or email
+            bool exists = await _context.Educators
+                .AnyAsync(e => e.Email == email || e.Name == username);
+
+            if (exists)
+                return null;
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+            var educator = new Educator
+            {
+                Email = email,
+                PasswordHash = passwordHash,
+                Name = username,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            _context.Educators.Add(educator);
+            await _context.SaveChangesAsync();
 
             return educator;
         }

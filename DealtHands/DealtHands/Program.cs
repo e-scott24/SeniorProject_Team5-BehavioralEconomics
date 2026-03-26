@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers(); // <-- add this
 
 // Register services
 builder.Services.AddScoped<SessionService>();
@@ -16,9 +17,19 @@ builder.Services.AddScoped<GameChangerService>();
 //builder.Services.AddScoped<AIPricingService>();
 builder.Services.AddScoped<EducatorService>();
 
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<GameSessionService>();
+
+
+/*
 // Add database context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+*/
+
+// v2
+builder.Services.AddDbContext<DealtHandsDbv2Context>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DealtHandsDBV2")));
 
 
 //for calculator
@@ -40,13 +51,15 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseSession(); // calculator
 
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+// Map API controllers
+app.MapControllers(); // <-- add this
+
 app.MapRazorPages()
    .WithStaticAssets();
 
-app.MapControllers(); // calculator
 app.Run();
