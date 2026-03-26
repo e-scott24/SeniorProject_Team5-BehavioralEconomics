@@ -2,6 +2,9 @@ using DealtHands.Data;
 using DealtHands.Services;
 using Microsoft.EntityFrameworkCore;
 
+
+// This is the Program.cs file
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
