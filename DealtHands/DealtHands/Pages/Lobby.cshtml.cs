@@ -13,14 +13,17 @@ namespace DealtHands.Pages
         private readonly UserService _userService;
         private readonly SessionTracker _sessionTracker;
         private readonly DealtHandsDbv2Context _context;
+        private readonly IAuthenticationService _authService;
 
         public LobbyModel(GameSessionService gameSessionService, UserService userService,
-                          SessionTracker sessionTracker, DealtHandsDbv2Context context)
+                          SessionTracker sessionTracker, DealtHandsDbv2Context context,
+                          IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
             _userService = userService;
             _sessionTracker = sessionTracker;
             _context = context;
+            _authService = authService;
         }
 
         public User Player { get; set; }
@@ -35,24 +38,22 @@ namespace DealtHands.Pages
             Session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (Session == null) return RedirectToPage("/Index");
 
-            // Role is set at login (Educator) or JoinSession (Student) — never inferred
-            IsEducator = HttpContext.Session.GetString("Role") == "Educator";
+            // Check role using authentication service
+            IsEducator = _authService.IsEducator;
 
             if (IsEducator)
             {
                 // Verify the educator owns this session
-                if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId)
-                    || Session.HostUserId != hostId)
+                if (!_authService.UserId.HasValue || Session.HostUserId != _authService.UserId.Value)
                     return RedirectToPage("/EducatorDashboard");
 
-                // Ensure SessionCode is always in session for the educator
-                HttpContext.Session.SetString("SessionCode", sessionCode);
+                // Ensure SessionCode is stored
+                _authService.SetSessionCode(sessionCode);
             }
             else
             {
                 // Verify the student is actually in this session
-                if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long studentSessionId)
-                    || studentSessionId != Session.GameSessionId)
+                if (!_authService.GameSessionId.HasValue || _authService.GameSessionId.Value != Session.GameSessionId)
                     return RedirectToPage("/JoinSession");
             }
 
@@ -65,28 +66,26 @@ namespace DealtHands.Pages
             }
 
             // Load student's own record for the player code display
-            if (!IsEducator && long.TryParse(HttpContext.Session.GetString("UserId"), out long uid))
-                Player = await _userService.GetUserByIdAsync(uid);
+            if (!IsEducator && _authService.UserId.HasValue)
+                Player = await _userService.GetUserByIdAsync(_authService.UserId.Value);
 
             return Page();
         }
 
-
-
-        
         // Educator: start the game and open Round 1
         public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Index");
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (session == null) return RedirectToPage("/CreateSession");
-            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != _authService.UserId.Value) return RedirectToPage("/EducatorDashboard");
 
-            HttpContext.Session.SetString("SessionCode", sessionCode);
+            _authService.SetSessionCode(sessionCode);
 
             await _gameSessionService.StartSessionAsync(session.GameSessionId);
 
@@ -96,68 +95,19 @@ namespace DealtHands.Pages
 
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
-        
-
-        /*
-        // DEBUG - educator start session
-        public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
-        {
-            // Diagnostic logging
-            var role = HttpContext.Session.GetString("Role");
-            var userIdStr = HttpContext.Session.GetString("UserId");
-
-            TempData["Debug"] = $"Role: '{role}' | UserId: '{userIdStr}' | SessionCode: '{sessionCode}'";
-
-            if (HttpContext.Session.GetString("Role") != "Educator")
-            {
-                TempData["Debug"] += " | FAILED: Role check";
-                return RedirectToPage("/Index");
-            }
-
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
-            {
-                TempData["Debug"] += " | FAILED: UserId parse";
-                return RedirectToPage("/Login");
-            }
-
-            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
-            if (session == null)
-            {
-                TempData["Debug"] += " | FAILED: Session not found";
-                return RedirectToPage("/CreateSession");
-            }
-
-            if (session.HostUserId != hostId)
-            {
-                TempData["Debug"] += $" | FAILED: HostUserId mismatch ({session.HostUserId} vs {hostId})";
-                return RedirectToPage("/EducatorDashboard");
-            }
-
-            HttpContext.Session.SetString("SessionCode", sessionCode);
-
-            await _gameSessionService.StartSessionAsync(session.GameSessionId);
-
-            var connectedUserIds = _sessionTracker.GetPlayers(session.GameSessionId);
-            if (connectedUserIds.Any())
-                await _gameSessionService.OpenRoundAsync(session.GameSessionId, connectedUserIds);
-
-            TempData["Debug"] += " | SUCCESS";
-            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
-        }
-        */
-
 
         // Educator: close current round and open next
         public async Task<IActionResult> OnPostCloseRoundAsync(string sessionCode)
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Index");
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (session == null) return RedirectToPage("/EducatorDashboard");
-            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != _authService.UserId.Value) return RedirectToPage("/EducatorDashboard");
 
             var round = await _gameSessionService.GetOpenRoundAsync(session.GameSessionId);
             if (round != null)
@@ -173,8 +123,8 @@ namespace DealtHands.Pages
                 }
                 else
                 {
+                    // Game complete - redirect to session report instead of dashboard
                     await _gameSessionService.EndSessionAsync(session.GameSessionId);
-                    //return RedirectToPage("/EducatorDashboard");
                     return RedirectToPage("/SessionReport", new { sessionId = session.GameSessionId });
                 }
             }
@@ -185,14 +135,15 @@ namespace DealtHands.Pages
         // Educator: pause
         public async Task<IActionResult> OnPostPauseSessionAsync(string sessionCode)
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Index");
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (session == null) return RedirectToPage("/EducatorDashboard");
-            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != _authService.UserId.Value) return RedirectToPage("/EducatorDashboard");
 
             await _gameSessionService.PauseSessionAsync(session.GameSessionId);
             return RedirectToPage("/EducatorDashboard");
@@ -201,14 +152,15 @@ namespace DealtHands.Pages
         // Educator: resume
         public async Task<IActionResult> OnPostResumeSessionAsync(string sessionCode)
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Index");
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (session == null) return RedirectToPage("/EducatorDashboard");
-            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != _authService.UserId.Value) return RedirectToPage("/EducatorDashboard");
 
             await _gameSessionService.ResumeSessionAsync(session.GameSessionId);
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
@@ -217,14 +169,15 @@ namespace DealtHands.Pages
         // Educator: cancel
         public async Task<IActionResult> OnPostCancelSessionAsync(string sessionCode)
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Index");
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
             if (session == null) return RedirectToPage("/EducatorDashboard");
-            if (session.HostUserId != hostId) return RedirectToPage("/EducatorDashboard");
+            if (session.HostUserId != _authService.UserId.Value) return RedirectToPage("/EducatorDashboard");
 
             await _gameSessionService.EndSessionAsync(session.GameSessionId);
             return RedirectToPage("/EducatorDashboard");
@@ -277,10 +230,12 @@ namespace DealtHands.Pages
                 return new JsonResult(new { roundOpen = false });
 
             var totalAssigned = await _context.Ugcs
+                .Include(u => u.Card)
                 .CountAsync(u => u.GameRoundId == round.GameRoundId
                               && u.Card.CardType == "RoundCard");
 
             var totalSubmitted = await _context.Ugcs
+                .Include(u => u.Card)
                 .CountAsync(u => u.GameRoundId == round.GameRoundId
                               && u.SubmittedAt != null
                               && u.Card.CardType == "RoundCard");

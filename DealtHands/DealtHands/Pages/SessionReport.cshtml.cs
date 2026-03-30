@@ -8,10 +8,12 @@ namespace DealtHands.Pages
     public class SessionReportModel : PageModel
     {
         private readonly GameSessionService _gameSessionService;
+        private readonly IAuthenticationService _authService;
 
-        public SessionReportModel(GameSessionService gameSessionService)
+        public SessionReportModel(GameSessionService gameSessionService, IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
+            _authService = authService;
         }
 
         public GameSession? Session { get; set; }
@@ -22,10 +24,10 @@ namespace DealtHands.Pages
         public async Task<IActionResult> OnGetAsync(long sessionId)
         {
             // Must be an educator
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Login");
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
             Session = await _gameSessionService.GetSessionByIdAsync(sessionId);
@@ -33,7 +35,7 @@ namespace DealtHands.Pages
                 return RedirectToPage("/EducatorDashboard");
 
             // Verify this educator owns this session
-            if (Session.HostUserId != userId)
+            if (Session.HostUserId != _authService.UserId.Value)
                 return RedirectToPage("/EducatorDashboard");
 
             // Load leaderboard
@@ -51,7 +53,6 @@ namespace DealtHands.Pages
             }
 
             // Load round-by-round data
-            // Get all rounds for this session
             var rounds = await _gameSessionService.GetSessionRoundsAsync(sessionId);
 
             foreach (var round in rounds)

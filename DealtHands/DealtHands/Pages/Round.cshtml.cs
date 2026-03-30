@@ -9,11 +9,14 @@ namespace DealtHands.Pages
     {
         private readonly GameSessionService _gameSessionService;
         private readonly SessionTracker _sessionTracker;
+        private readonly IAuthenticationService _authService;
 
-        public RoundModel(GameSessionService gameSessionService, SessionTracker sessionTracker)
+        public RoundModel(GameSessionService gameSessionService, SessionTracker sessionTracker,
+                          IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
             _sessionTracker = sessionTracker;
+            _authService = authService;
         }
 
         public List<Card> Cards { get; set; } = new List<Card>();
@@ -25,20 +28,24 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // Hard stop â€” educators never play rounds
-            if (HttpContext.Session.GetString("Role") == "Educator")
+            // Hard stop — educators never play rounds
+            if (_authService.IsEducator)
             {
-                var code = HttpContext.Session.GetString("SessionCode");
+                var code = _authService.SessionCode;
                 return !string.IsNullOrEmpty(code)
                     ? RedirectToPage("/Lobby", new { sessionCode = code })
                     : RedirectToPage("/EducatorDashboard");
             }
 
             // Must be a student with valid session data
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/JoinSession");
-            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+
+            if (!_authService.GameSessionId.HasValue)
                 return RedirectToPage("/JoinSession");
+
+            long userId = _authService.UserId.Value;
+            long gameSessionId = _authService.GameSessionId.Value;
 
             Session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
             if (Session == null) return RedirectToPage("/JoinSession");
@@ -66,7 +73,7 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            // Player wasn't in the tracker when the round opened â€” assign them a card now
+            // Player wasn't in the tracker when the round opened — assign them a card now
             if (existingUgc == null)
             {
                 _sessionTracker.AddPlayer(gameSessionId, userId);
@@ -87,19 +94,23 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnPostSelectChoiceAsync(int chosenCardId, decimal submittedAmount)
         {
-            // Hard stop â€” educators never post choices
-            if (HttpContext.Session.GetString("Role") == "Educator")
+            // Hard stop — educators never post choices
+            if (_authService.IsEducator)
             {
-                var code = HttpContext.Session.GetString("SessionCode");
+                var code = _authService.SessionCode;
                 return !string.IsNullOrEmpty(code)
                     ? RedirectToPage("/Lobby", new { sessionCode = code })
                     : RedirectToPage("/EducatorDashboard");
             }
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/JoinSession");
-            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+
+            if (!_authService.GameSessionId.HasValue)
                 return RedirectToPage("/JoinSession");
+
+            long userId = _authService.UserId.Value;
+            long gameSessionId = _authService.GameSessionId.Value;
 
             Session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
             if (Session == null) return RedirectToPage("/JoinSession");
@@ -135,7 +146,6 @@ namespace DealtHands.Pages
             return RedirectToPage("/Round");
         }
 
-
         /// <summary>
         /// API endpoint for students to poll and detect when:
         /// - Current round has closed
@@ -145,10 +155,10 @@ namespace DealtHands.Pages
         public async Task<JsonResult> OnGetCheckRoundStatusAsync(long gameSessionId)
         {
             // Must be a student
-            if (HttpContext.Session.GetString("Role") == "Educator")
+            if (_authService.IsEducator)
                 return new JsonResult(new { error = "Educators don't poll rounds" });
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return new JsonResult(new { error = "Not authenticated" });
 
             var session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
@@ -174,7 +184,7 @@ namespace DealtHands.Pages
             bool playerSubmitted = false;
             if (openRound != null)
             {
-                var ugc = await _gameSessionService.GetPlayerRoundUgcAsync(userId, openRound.GameRoundId);
+                var ugc = await _gameSessionService.GetPlayerRoundUgcAsync(_authService.UserId.Value, openRound.GameRoundId);
                 playerSubmitted = ugc?.SubmittedAt != null;
             }
 
@@ -186,6 +196,5 @@ namespace DealtHands.Pages
                 playerSubmitted = playerSubmitted
             });
         }
-
     }
 }

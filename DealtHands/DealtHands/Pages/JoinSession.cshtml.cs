@@ -9,13 +9,15 @@ namespace DealtHands.Pages
         private readonly GameSessionService _gameSessionService;
         private readonly UserService _userService;
         private readonly SessionTracker _sessionTracker;
+        private readonly IAuthenticationService _authService;
 
         public JoinSessionModel(GameSessionService gameSessionService, UserService userService,
-                                SessionTracker sessionTracker)
+                                SessionTracker sessionTracker, IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
             _userService = userService;
             _sessionTracker = sessionTracker;
+            _authService = authService;
         }
 
         [BindProperty]
@@ -70,12 +72,8 @@ namespace DealtHands.Pages
                     return Page();
                 }
 
-                // Clear ALL existing session data and set student identity fresh
-                HttpContext.Session.Clear();
-                HttpContext.Session.SetString("Role", "Student");
-                HttpContext.Session.SetString("UserId", returningUserId.ToString());
-                HttpContext.Session.SetString("PlayerName", returningUser.Username);
-                HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
+                // Use authentication service to set student session
+                _authService.SetStudentSession(returningUserId, returningUser.Username, session.GameSessionId);
 
                 _sessionTracker.AddPlayer(session.GameSessionId, returningUserId);
 
@@ -104,12 +102,8 @@ namespace DealtHands.Pages
 
             var student = await _userService.CreateOrGetStudentAsync(PlayerName);
 
-            // Clear ALL existing session data and set student identity fresh
-            HttpContext.Session.Clear();
-            HttpContext.Session.SetString("Role", "Student");
-            HttpContext.Session.SetString("UserId", student.UserId.ToString());
-            HttpContext.Session.SetString("PlayerName", student.Username);
-            HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
+            // Use authentication service to set student session
+            _authService.SetStudentSession(student.UserId, student.Username, session.GameSessionId);
 
             _sessionTracker.AddPlayer(session.GameSessionId, student.UserId);
 

@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http
+@inject DealtHands.Services.IAuthenticationService AuthService
+<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
@@ -13,9 +15,6 @@
 	<header>
 		<nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
 			<div class="container">
-				<!--
-				<a class="navbar-brand" asp-area="" asp-page="/Index">DealtHands</a>
-				-->
 				<a class="navbar-brand" asp-area="" asp-page="/Index">
 					<img src="~/images/DealtHandsLogo.png" alt="Dealt Hands" height="60" />
 				</a>
@@ -28,6 +27,13 @@
 						<li class="nav-item">
 							<a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
 						</li>
+						<!-- Show Educator Dashboard link only if logged in as educator -->
+						@if (AuthService.IsEducator)
+						{
+							<li class="nav-item">
+								<a class="nav-link text-dark" asp-area="" asp-page="/EducatorDashboard">Educator Dashboard</a>
+							</li>
+						}
 						<li class="nav-item">
 							<a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
 						</li>
@@ -91,7 +97,7 @@
 			if (window.reloadCalculatorData) {
 				window.reloadCalculatorData();
 			}
-		} // closing function openCalculator
+		}
 		function closeCalculator() {
 			var modal = document.getElementById('calc-model');
 			var box = document.getElementById('calc-model-box');

@@ -7,10 +7,12 @@ namespace DealtHands.Pages
     public class RegisterModel : PageModel
     {
         private readonly UserService _userService;
+        private readonly IAuthenticationService _authService;
 
-        public RegisterModel(UserService userService)
+        public RegisterModel(UserService userService, IAuthenticationService authService)
         {
             _userService = userService;
+            _authService = authService;
         }
 
         [BindProperty]
@@ -38,12 +40,8 @@ namespace DealtHands.Pages
                     return Page();
                 }
 
-                // Clear any leftover student session data
-                HttpContext.Session.Clear();
-
-                HttpContext.Session.SetString("UserId", user.UserId.ToString());
-                HttpContext.Session.SetString("EducatorName", user.Username);
-                HttpContext.Session.SetString("Role", "Educator");
+                // Use the authentication service to set educator session
+                _authService.SetEducatorSession(user.UserId, user.Username);
 
                 return RedirectToPage("/EducatorDashboard");
             }

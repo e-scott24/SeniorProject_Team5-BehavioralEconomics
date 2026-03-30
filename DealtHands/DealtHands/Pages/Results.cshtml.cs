@@ -8,10 +8,12 @@ namespace DealtHands.Pages
     public class ResultsModel : PageModel
     {
         private readonly GameSessionService _gameSessionService;
+        private readonly IAuthenticationService _authService;
 
-        public ResultsModel(GameSessionService gameSessionService)
+        public ResultsModel(GameSessionService gameSessionService, IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
+            _authService = authService;
         }
 
         public List<LeaderboardEntry> Leaderboard { get; set; } = new List<LeaderboardEntry>();
@@ -21,13 +23,17 @@ namespace DealtHands.Pages
         public async Task<IActionResult> OnGetAsync()
         {
             // Hard stop — educators don't have a player GameSessionId
-            if (HttpContext.Session.GetString("Role") == "Educator")
+            if (_authService.IsEducator)
                 return RedirectToPage("/EducatorDashboard");
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/JoinSession");
-            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+
+            if (!_authService.GameSessionId.HasValue)
                 return RedirectToPage("/JoinSession");
+
+            long userId = _authService.UserId.Value;
+            long gameSessionId = _authService.GameSessionId.Value;
 
             Leaderboard = await _gameSessionService.GetLeaderboardAsync(gameSessionId);
             PlayerHistory = await _gameSessionService.GetPlayerHistoryAsync(userId, gameSessionId);

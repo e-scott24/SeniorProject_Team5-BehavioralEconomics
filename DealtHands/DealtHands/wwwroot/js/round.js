@@ -1,4 +1,4 @@
-﻿// round.js - Polling for students to detect round changes and game completion
+﻿// round.js - Background polling for students to detect round changes
 
 const isStudent = document.querySelector('[data-role="student"]') !== null;
 
@@ -6,8 +6,14 @@ if (!isStudent) {
     console.log('Educator detected - no round polling');
 } else {
     let gameSessionId = document.querySelector('[data-session-id]')?.getAttribute('data-session-id');
-    let lastRoundNumber = document.querySelector('[data-round-id]') ?
-        parseInt(document.querySelector('h2')?.textContent.match(/ROUND (\d+)/)?.[1] || '0') : 0;
+    let hasSubmitted = false;
+    let lastCheckTime = Date.now();
+
+    // Check if we're on the "waiting" screen
+    function isOnWaitingScreen() {
+        return document.body.textContent.includes('Waiting for the educator') ||
+            document.body.textContent.includes('Choice submitted');
+    }
 
     async function checkRoundStatus() {
         try {
@@ -16,16 +22,25 @@ if (!isStudent) {
 
             // Game completed - go to results
             if (data.gameCompleted) {
+                console.log('Game completed, redirecting to results...');
                 window.location.href = '/Results';
                 return;
             }
 
-            // If we're on a waiting screen and a new round opened, reload
-            const isWaiting = document.body.textContent.includes('Waiting for the educator');
-            if (isWaiting && data.newRoundOpen && !data.currentRoundClosed) {
-                console.log('New round opened, reloading...');
-                window.location.reload();
-                return;
+            // Track if we submitted
+            if (data.playerSubmitted) {
+                hasSubmitted = true;
+            }
+
+            // If we're waiting and a new round opened, reload ONCE
+            if (isOnWaitingScreen() && data.newRoundOpen && !data.currentRoundClosed) {
+                // Only reload if we haven't reloaded in the last 3 seconds (prevent reload loops)
+                const now = Date.now();
+                if (now - lastCheckTime > 3000) {
+                    console.log('New round detected, reloading...');
+                    lastCheckTime = now;
+                    window.location.reload();
+                }
             }
 
         } catch (err) {
@@ -33,7 +48,7 @@ if (!isStudent) {
         }
     }
 
-    // Poll every 2 seconds
-    setInterval(checkRoundStatus, 2000);
+    // Poll every 3 seconds (not every 1 second - too aggressive)
+    setInterval(checkRoundStatus, 3000);
     checkRoundStatus();
 }

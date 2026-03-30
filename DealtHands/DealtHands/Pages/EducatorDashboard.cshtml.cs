@@ -8,10 +8,12 @@ namespace DealtHands.Pages
     public class EducatorDashboardModel : PageModel
     {
         private readonly UserService _userService;
+        private readonly IAuthenticationService _authService;
 
-        public EducatorDashboardModel(UserService userService)
+        public EducatorDashboardModel(UserService userService, IAuthenticationService authService)
         {
             _userService = userService;
+            _authService = authService;
         }
 
         public List<GameSession> ActiveSessions { get; set; } = new List<GameSession>();
@@ -19,13 +21,14 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnGetAsync()
         {
-            if (HttpContext.Session.GetString("Role") != "Educator")
+            // Check if user is authenticated as educator
+            if (!_authService.IsEducator)
                 return RedirectToPage("/Login");
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
-            var allSessions = await _userService.GetEducatorSessionsAsync(userId);
+            var allSessions = await _userService.GetEducatorSessionsAsync(_authService.UserId.Value);
 
             // Active = anything not completed and still active
             ActiveSessions = allSessions.Where(s => s.Status != "Completed" && s.IsActive).ToList();

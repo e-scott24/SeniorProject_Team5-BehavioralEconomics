@@ -7,10 +7,12 @@ namespace DealtHands.Pages
     public class CreateSessionModel : PageModel
     {
         private readonly GameSessionService _gameSessionService;
+        private readonly IAuthenticationService _authService;
 
-        public CreateSessionModel(GameSessionService gameSessionService)
+        public CreateSessionModel(GameSessionService gameSessionService, IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
+            _authService = authService;
         }
 
         [BindProperty]
@@ -25,24 +27,30 @@ namespace DealtHands.Pages
         [BindProperty]
         public int MaxPlayers { get; set; } = 35;
 
-        public void OnGet() { }
+        public async Task<IActionResult> OnGetAsync()
+        {
+            // Check if user is authenticated as educator
+            if (!_authService.IsEducator)
+                return RedirectToPage("/Login");
+
+            return Page();
+        }
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid) return Page();
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+            // Check if user is authenticated as educator
+            if (!_authService.IsEducator || !_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
-            // Confirm educator role is set — should already be set from login
-            // but explicitly re-set here to be safe
-            HttpContext.Session.SetString("Role", "Educator");
+            var session = await _gameSessionService.CreateSessionAsync(
+                _authService.UserId.Value,
+                SessionName,
+                Difficulty);
 
-            var session = await _gameSessionService.CreateSessionAsync(userId, SessionName, Difficulty);
-
-            // Store session info for the educator's control panel
-            HttpContext.Session.SetString("GameSessionId", session.GameSessionId.ToString());
-            HttpContext.Session.SetString("SessionCode", session.JoinCode);
+            // Store session code in the authentication service
+            _authService.SetSessionCode(session.JoinCode);
 
             return RedirectToPage("/Lobby", new { sessionCode = session.JoinCode });
         }
