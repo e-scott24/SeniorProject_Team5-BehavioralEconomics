@@ -71,6 +71,9 @@ namespace DealtHands.Pages
             return Page();
         }
 
+
+
+        /*
         // Educator: start the game and open Round 1
         public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
         {
@@ -93,6 +96,55 @@ namespace DealtHands.Pages
 
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
+        */
+
+        // DEBUG - educator start session
+        public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
+        {
+            // Diagnostic logging
+            var role = HttpContext.Session.GetString("Role");
+            var userIdStr = HttpContext.Session.GetString("UserId");
+
+            TempData["Debug"] = $"Role: '{role}' | UserId: '{userIdStr}' | SessionCode: '{sessionCode}'";
+
+            if (HttpContext.Session.GetString("Role") != "Educator")
+            {
+                TempData["Debug"] += " | FAILED: Role check";
+                return RedirectToPage("/Index");
+            }
+
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long hostId))
+            {
+                TempData["Debug"] += " | FAILED: UserId parse";
+                return RedirectToPage("/Login");
+            }
+
+            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
+            if (session == null)
+            {
+                TempData["Debug"] += " | FAILED: Session not found";
+                return RedirectToPage("/CreateSession");
+            }
+
+            if (session.HostUserId != hostId)
+            {
+                TempData["Debug"] += $" | FAILED: HostUserId mismatch ({session.HostUserId} vs {hostId})";
+                return RedirectToPage("/EducatorDashboard");
+            }
+
+            HttpContext.Session.SetString("SessionCode", sessionCode);
+
+            await _gameSessionService.StartSessionAsync(session.GameSessionId);
+
+            var connectedUserIds = _sessionTracker.GetPlayers(session.GameSessionId);
+            if (connectedUserIds.Any())
+                await _gameSessionService.OpenRoundAsync(session.GameSessionId, connectedUserIds);
+
+            TempData["Debug"] += " | SUCCESS";
+            return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
+        }
+
+
 
         // Educator: close current round and open next
         public async Task<IActionResult> OnPostCloseRoundAsync(string sessionCode)

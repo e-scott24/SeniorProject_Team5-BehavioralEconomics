@@ -4,6 +4,15 @@
     ViewData["Title"] = Model.CurrentRound?.RoundType ?? "Round";
 }
 
+
+<!-- Hidden data attributes for JavaScript -->
+<div data-role="student"
+     data-round-id="@Model.CurrentRound?.GameRoundId"
+     data-session-id="@Model.Session?.GameSessionId"
+     style="display:none;">
+</div>
+
+
 <h2>ROUND @Model.CurrentRound?.RoundNumber: @Model.CurrentRound?.RoundType?.ToUpper()</h2>
 
 @if (Model.FinancialState != null)
@@ -43,4 +52,8 @@ else
         }
         <input type="hidden" id="submittedAmount" name="submittedAmount" value="0" />
     </form>
+}
+
+@section Scripts {
+    <script src="~/js/round.js"></script>
 }

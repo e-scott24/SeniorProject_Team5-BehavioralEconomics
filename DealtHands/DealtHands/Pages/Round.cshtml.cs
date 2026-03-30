@@ -134,5 +134,58 @@ namespace DealtHands.Pages
             TempData["WaitingMessage"] = "Choice submitted! Waiting for the educator to advance to the next round...";
             return RedirectToPage("/Round");
         }
+
+
+        /// <summary>
+        /// API endpoint for students to poll and detect when:
+        /// - Current round has closed
+        /// - New round has opened
+        /// - Game has completed
+        /// </summary>
+        public async Task<JsonResult> OnGetCheckRoundStatusAsync(long gameSessionId)
+        {
+            // Must be a student
+            if (HttpContext.Session.GetString("Role") == "Educator")
+                return new JsonResult(new { error = "Educators don't poll rounds" });
+
+            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
+                return new JsonResult(new { error = "Not authenticated" });
+
+            var session = await _gameSessionService.GetSessionByIdAsync(gameSessionId);
+            if (session == null)
+                return new JsonResult(new { error = "Session not found" });
+
+            // Check if game completed
+            if (session.Status == "Completed")
+            {
+                return new JsonResult(new
+                {
+                    gameCompleted = true,
+                    currentRoundClosed = false,
+                    newRoundOpen = false,
+                    playerSubmitted = false
+                });
+            }
+
+            // Get the current open round
+            var openRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
+
+            // Check if player has submitted for current round
+            bool playerSubmitted = false;
+            if (openRound != null)
+            {
+                var ugc = await _gameSessionService.GetPlayerRoundUgcAsync(userId, openRound.GameRoundId);
+                playerSubmitted = ugc?.SubmittedAt != null;
+            }
+
+            return new JsonResult(new
+            {
+                gameCompleted = false,
+                currentRoundClosed = openRound == null, // No open round = current round closed
+                newRoundOpen = openRound != null, // Open round exists = new round available
+                playerSubmitted = playerSubmitted
+            });
+        }
+
     }
 }

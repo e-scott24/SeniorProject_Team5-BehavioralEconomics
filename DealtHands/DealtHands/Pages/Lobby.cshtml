@@ -4,6 +4,14 @@
     ViewData["Title"] = "Lobby";
 }
 
+
+@if (TempData["Debug"] != null)
+{
+    <div class="alert alert-info">
+        DEBUG: @TempData["Debug"]
+    </div>
+}
+
 <div class="container mt-4">
     <input type="hidden" id="sessionCode" value="@Model.SessionCode" />
     <input type="hidden" id="isEducator" value="@Model.IsEducator.ToString().ToLower()" />
