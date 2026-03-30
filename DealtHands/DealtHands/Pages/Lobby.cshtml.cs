@@ -73,7 +73,7 @@ namespace DealtHands.Pages
 
 
 
-        /*
+        
         // Educator: start the game and open Round 1
         public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
         {
@@ -96,8 +96,9 @@ namespace DealtHands.Pages
 
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
-        */
+        
 
+        /*
         // DEBUG - educator start session
         public async Task<IActionResult> OnPostStartGameAsync(string sessionCode)
         {
@@ -143,7 +144,7 @@ namespace DealtHands.Pages
             TempData["Debug"] += " | SUCCESS";
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
-
+        */
 
 
         // Educator: close current round and open next
@@ -173,7 +174,8 @@ namespace DealtHands.Pages
                 else
                 {
                     await _gameSessionService.EndSessionAsync(session.GameSessionId);
-                    return RedirectToPage("/EducatorDashboard");
+                    //return RedirectToPage("/EducatorDashboard");
+                    return RedirectToPage("/SessionReport", new { sessionId = session.GameSessionId });
                 }
             }
 

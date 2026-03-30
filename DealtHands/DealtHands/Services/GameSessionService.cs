@@ -283,6 +283,19 @@ namespace DealtHands.Services
                 .ToListAsync();
         }
 
+
+        /// <summary>
+        /// Gets all rounds for a specific session, ordered by round number.
+        /// </summary>
+        public async Task<List<GameRound>> GetSessionRoundsAsync(long gameSessionId)
+        {
+            return await _context.GameRounds
+                .Where(r => r.GameSessionId == gameSessionId)
+                .OrderBy(r => r.RoundNumber)
+                .ToListAsync();
+        }
+
+
         #endregion
 
         #region Card Assignment and Submission

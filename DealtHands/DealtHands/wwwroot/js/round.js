@@ -3,15 +3,11 @@
 const isStudent = document.querySelector('[data-role="student"]') !== null;
 
 if (!isStudent) {
-    // Educators don't poll on the Round page - they stay in Lobby
     console.log('Educator detected - no round polling');
 } else {
-    // Students poll to detect:
-    // 1. Round closure (redirect to next round)
-    // 2. Game completion (redirect to Results)
-
-    let currentRoundId = document.querySelector('[data-round-id]')?.getAttribute('data-round-id');
     let gameSessionId = document.querySelector('[data-session-id]')?.getAttribute('data-session-id');
+    let lastRoundNumber = document.querySelector('[data-round-id]') ?
+        parseInt(document.querySelector('h2')?.textContent.match(/ROUND (\d+)/)?.[1] || '0') : 0;
 
     async function checkRoundStatus() {
         try {
@@ -24,16 +20,12 @@ if (!isStudent) {
                 return;
             }
 
-            // Current round closed and new round opened - reload to show new round
-            if (data.currentRoundClosed && data.newRoundOpen) {
+            // If we're on a waiting screen and a new round opened, reload
+            const isWaiting = document.body.textContent.includes('Waiting for the educator');
+            if (isWaiting && data.newRoundOpen && !data.currentRoundClosed) {
+                console.log('New round opened, reloading...');
                 window.location.reload();
                 return;
-            }
-
-            // Submitted and waiting - show waiting message if not already shown
-            if (data.playerSubmitted && !data.currentRoundClosed) {
-                // Player has submitted, just waiting for educator to advance
-                console.log('Waiting for educator to advance round...');
             }
 
         } catch (err) {

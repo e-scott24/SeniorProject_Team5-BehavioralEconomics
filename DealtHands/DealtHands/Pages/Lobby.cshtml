@@ -4,13 +4,14 @@
     ViewData["Title"] = "Lobby";
 }
 
-
+@* For debugging
 @if (TempData["Debug"] != null)
 {
     <div class="alert alert-info">
         DEBUG: @TempData["Debug"]
     </div>
 }
+*@
 
 <div class="container mt-4">
     <input type="hidden" id="sessionCode" value="@Model.SessionCode" />

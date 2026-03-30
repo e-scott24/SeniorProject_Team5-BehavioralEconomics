@@ -1,0 +1,203 @@
+﻿@page
+@model DealtHands.Pages.SessionReportModel
+@{
+    ViewData["Title"] = "Session Report";
+}
+
+<div class="container mt-4" id="session-report-content">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h2>Session Report: @Model.Session?.Name</h2>
+        <div>
+            <button class="btn btn-success me-2" onclick="downloadPDF()">
+                Download as PDF
+            </button>
+            <a href="/EducatorDashboard" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- For PDF: Show title when buttons are hidden -->
+    <div class="print-only" style="display: none;">
+        <h2 class="mb-4">Session Report: @Model.Session?.Name</h2>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Session Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <p class="mb-2"><strong>Join Code:</strong> @Model.Session?.JoinCode</p>
+                </div>
+                <div class="col-md-3">
+                    <p class="mb-2"><strong>Mode:</strong> @Model.Session?.Game?.Mode</p>
+                </div>
+                <div class="col-md-3">
+                    <p class="mb-2"><strong>Difficulty:</strong> @Model.Session?.Difficulty</p>
+                </div>
+                <div class="col-md-3">
+                    <p class="mb-2"><strong>Players:</strong> @Model.Leaderboard?.Count</p>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Started:</strong> @Model.Session?.StartedAt?.ToString("MM/dd/yyyy hh:mm tt")</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Completed:</strong> @Model.Session?.EndedAt?.ToString("MM/dd/yyyy hh:mm tt")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Final Leaderboard</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Final Score</th>
+                        <th>Choices Made</th>
+                        <th>Financial Health</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                    }
+                    @foreach (var entry in Model.Leaderboard)
+                    {
+                        <tr>
+                            <td>
+                                @if (rank == 1)
+                                {
+                                    <span class="badge bg-warning text-dark">🏆 #@rank</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">#@rank</span>
+                                }
+                            </td>
+                            <td>@entry.Username</td>
+                            <td class="@(entry.CurrentScore >= 0 ? "text-success" : "text-danger")">
+                                $@entry.CurrentScore.ToString("N2")
+                            </td>
+                            <td>@entry.CardsSubmitted</td>
+                            <td>
+                                @{
+                                    var state = Model.PlayerStates?.FirstOrDefault(s => s.UserId == entry.UserId);
+                                    var health = state?.FinancialHealth ?? "Unknown";
+                                    var badgeClass = health == "Healthy" ? "bg-success" : health == "Struggling" ? "bg-warning" : "bg-danger";
+                                }
+                                <span class="badge @badgeClass">@health</span>
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Round-by-Round Summary</h5>
+        </div>
+        <div class="card-body">
+            @for (int roundNum = 1; roundNum <= 5; roundNum++)
+            {
+                var roundData = Model.RoundSummaries?.FirstOrDefault(r => r.RoundNumber == roundNum);
+                if (roundData != null)
+                {
+                    <h6 class="mt-3">Round @roundNum: @roundData.RoundType</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Card Chosen</th>
+                                <th>Amount</th>
+                                <th>Running Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var result in roundData.Results)
+                            {
+                                <tr>
+                                    <td>@result.Username</td>
+                                    <td>@result.CardTitle</td>
+                                    <td class="@(result.SubmittedAmount >= 0 ? "text-success" : "text-danger")">
+                                        @(result.SubmittedAmount >= 0 ? "+" : "")$@result.SubmittedAmount?.ToString("N2")
+                                    </td>
+                                    <td class="@(result.RunningTotal >= 0 ? "text-success" : "text-danger")">
+                                        $@result.RunningTotal?.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        async function downloadPDF() {
+            const element = document.getElementById('session-report-content');
+
+            // Hide no-print elements and show print-only
+            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.print-only').forEach(el => el.style.display = 'block');
+
+            try {
+                // Capture the element as canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Add new pages if content is longer than one page
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save('Session_Report_@(Model.Session?.JoinCode).pdf');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            } finally {
+                // Restore visibility
+                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+                document.querySelectorAll('.print-only').forEach(el => el.style.display = 'none');
+            }
+        }
+    </script>
+}

@@ -3,24 +3,20 @@
 @{
     ViewData["Title"] = "Game Results";
 }
-
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow">
+            <div class="card shadow" id="results-content">
                 <div class="card-header bg-success text-white text-center">
                     <h2 class="mb-0">GAME COMPLETE!</h2>
                 </div>
                 <div class="card-body text-center">
-
                     <div class="mb-4">
                         <h3>Your Final Financial Health</h3>
                         <div style="font-size: 5rem;"></div>
                         <h4 class="text-success">@Model.FinancialState?.FinancialHealth</h4>
                     </div>
-
                     <hr>
-
                     <div class="row text-start">
                         <div class="col-md-6 mb-3">
                             <div class="card bg-light">
@@ -46,36 +42,119 @@
                                 </div>
                             </div>
                         </div>
-                        <!--
-                        <div class="col-md-6 mb-3">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="text-muted">Total Debt</h6>
-                                    <h4 class="text-warning">$58,500</h4>
-                                </div>
-                            </div>
-                        </div>
-                        -->
                     </div>
-
                     <hr>
-
                     <h5 class="mb-3">Key Takeaways</h5>
                     <div class="alert alert-info text-start">
                         <ul class="mb-0">
-                            <li>Your car payment was 15% of your income</li>
-                            <li>Housing costs were within the recommended 25%</li>
-                            <li>Game Changers cost you $5,200 total</li>
-                            <li>You finished with a positive monthly budget!</li>
+                            <li>Your monthly income was $@Model.FinancialState?.MonthlyIncome.ToString("N0")</li>
+                            <li>Your total monthly expenses were $@Model.FinancialState?.MonthlyExpenses.ToString("N0")</li>
+                            <li>You finished with $@Model.FinancialState?.Available.ToString("N0") available each month</li>
+                            <li>Your financial health status: @Model.FinancialState?.FinancialHealth</li>
                         </ul>
                     </div>
 
-                    <div class="d-grid gap-2 mt-4">
+                    <!-- Round-by-Round Breakdown (always visible for PDF) -->
+                    <div class="mt-4" id="detailed-report-section">
+                        <h5 class="mb-3">Round-by-Round Breakdown</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Round</th>
+                                    <th>Type</th>
+                                    <th>Card</th>
+                                    <th>Amount</th>
+                                    <th>Running Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ugc in Model.PlayerHistory.OrderBy(u => u.AssignedAt))
+                                {
+                                    <tr>
+                                        <td>@ugc.GameRound?.RoundNumber</td>
+                                        <td>@ugc.GameRound?.RoundType</td>
+                                        <td>
+                                            @ugc.Card?.Title
+                                            @if (ugc.Card?.CardType == "GameChangerCard")
+                                            {
+                                                <span class="badge bg-warning text-dark">Game Changer</span>
+                                            }
+                                        </td>
+                                        <td class="@(ugc.SubmittedAmount >= 0 ? "text-success" : "text-danger")">
+                                            @(ugc.SubmittedAmount >= 0 ? "+" : "")$@ugc.SubmittedAmount?.ToString("N2")
+                                        </td>
+                                        <td class="@(ugc.RunningTotal >= 0 ? "text-success" : "text-danger")">
+                                            $@ugc.RunningTotal?.ToString("N2")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4 no-print">
+                        <button class="btn btn-success btn-lg" onclick="downloadPDF()">
+                            Download Report as PDF
+                        </button>
                         <a href="/JoinSession" class="btn btn-primary btn-lg">Play Again</a>
-                        <button class="btn btn-outline-secondary">View Detailed Report</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        async function downloadPDF() {
+            const element = document.getElementById('results-content');
+
+            // Hide the buttons before generating PDF
+            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+
+            try {
+                // Capture the element as canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Add new pages if content is longer than one page
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save('DealtHands_Game_Results.pdf');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            } finally {
+                // Show buttons again
+                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+            }
+        }
+    </script>
+}
