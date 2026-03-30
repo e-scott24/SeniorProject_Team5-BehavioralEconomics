@@ -78,6 +78,17 @@
                         <td>
                             <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
                         </td>
+                        <!-- "Soft delete" button (doesn't actually delete it from DB, just sets the active status to false)-->
+                        <td>
+                            <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
+                            <form method="post" style="display:inline;" asp-page-handler="ArchiveSession">
+                                <input type="hidden" name="sessionId" value="@session.GameSessionId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Archive this session? It will be hidden from your dashboard.');">
+                                    Archive
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                 }
             </tbody>

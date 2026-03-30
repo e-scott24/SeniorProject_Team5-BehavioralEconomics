@@ -185,12 +185,12 @@ public partial class DealtHandsDbv2Context : DbContext
             entity.HasOne(d => d.GameRound).WithMany(p => p.Ugcs)
                 .HasForeignKey(d => d.GameRoundId)
                 .HasConstraintName("fk_ugc_round");
-
+            /* Removed the foreign key constraint from the DB on 3/30/26
             entity.HasOne(d => d.GameSession).WithMany(p => p.Ugcs)
                 .HasForeignKey(d => d.GameSessionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_ugc_session");
-
+            */
             entity.HasOne(d => d.User).WithMany(p => p.Ugcs)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
