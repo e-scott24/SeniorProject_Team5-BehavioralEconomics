@@ -15,7 +15,6 @@ namespace DealtHands.Services
         private readonly Random _random;
 
         // Constants for the DealtHands game
-        private const long DEALTHANDS_GAME_ID = 1; // The Game.GameId for DealtHands
         private static readonly string[] ROUND_TYPES = new[]
         {
             "Career",           // Round 1
@@ -37,10 +36,11 @@ namespace DealtHands.Services
         /// Creates a new game session hosted by the specified educator/user.
         /// </summary>
         /// <param name="hostUserId">The UserId of the educator hosting this session</param>
+        /// <param name="gameId">The GameId corresponding to the selected mode (1 = RandomAssigned, 2 = ChooseFromFour)</param>
         /// <param name="sessionName">Optional friendly name for the session</param>
-        /// <param name="difficulty">"Easy", "Medium", or "Hard" � affects game changer probability</param>
+        /// <param name="difficulty">"Easy", "Medium", or "Hard" — affects game changer probability</param>
         /// <returns>The created GameSession with a unique JoinCode</returns>
-        public async Task<GameSession> CreateSessionAsync(long hostUserId, string? sessionName = null, string? difficulty = null)
+        public async Task<GameSession> CreateSessionAsync(long hostUserId, long gameId, string? sessionName = null, string? difficulty = null)
         {
             string joinCode;
             do
@@ -51,7 +51,7 @@ namespace DealtHands.Services
 
             var session = new GameSession
             {
-                GameId = DEALTHANDS_GAME_ID,
+                GameId = gameId,
                 HostUserId = hostUserId,
                 JoinCode = joinCode,
                 Name = sessionName,
@@ -160,9 +160,6 @@ namespace DealtHands.Services
         /// <summary>
         /// Opens a new round in the session and assigns cards to all connected players.
         /// </summary>
-        /// <param name="gameSessionId">The session to create the round in</param>
-        /// <param name="connectedUserIds">List of UserIds currently connected to the session</param>
-        /// <returns>The created GameRound</returns>
         public async Task<GameRound> OpenRoundAsync(long gameSessionId, List<long> connectedUserIds)
         {
             var session = await _context.GameSessions.FindAsync(gameSessionId);
@@ -219,6 +216,10 @@ namespace DealtHands.Services
         /// </summary>
         public async Task AssignLatePlayerAsync(long userId, GameRound round, long gameSessionId)
         {
+            bool alreadyAssigned = await _context.Ugcs
+                .AnyAsync(u => u.UserId == userId && u.GameRoundId == round.GameRoundId);
+            if (alreadyAssigned) return;
+
             var session = await _context.GameSessions
                 .Include(s => s.Game)
                 .FirstOrDefaultAsync(s => s.GameSessionId == gameSessionId);
@@ -239,6 +240,7 @@ namespace DealtHands.Services
             {
                 UserId = userId,
                 CardId = assignedCard.CardId,
+                GameChangerId = null,
                 GameRoundId = round.GameRoundId,
                 GameSessionId = gameSessionId,
                 AssignedAt = DateTime.UtcNow,
@@ -264,9 +266,9 @@ namespace DealtHands.Services
         public async Task<bool> AreAllPlayersSubmittedAsync(long gameRoundId)
         {
             var totalAssigned = await _context.Ugcs
-                .CountAsync(u => u.GameRoundId == gameRoundId && u.Card.CardType == "RoundCard");
+                .CountAsync(u => u.GameRoundId == gameRoundId && u.CardId != null);
             var totalSubmitted = await _context.Ugcs
-                .CountAsync(u => u.GameRoundId == gameRoundId && u.SubmittedAt != null && u.Card.CardType == "RoundCard");
+                .CountAsync(u => u.GameRoundId == gameRoundId && u.CardId != null && u.SubmittedAt != null);
 
             return totalAssigned > 0 && totalSubmitted >= totalAssigned;
         }
@@ -279,10 +281,9 @@ namespace DealtHands.Services
             return await _context.Ugcs
                 .Include(u => u.User)
                 .Include(u => u.Card)
-                .Where(u => u.GameRoundId == gameRoundId && u.SubmittedAt == null)
+                .Where(u => u.GameRoundId == gameRoundId && u.CardId != null && u.SubmittedAt == null)
                 .ToListAsync();
         }
-
 
         /// <summary>
         /// Gets all rounds for a specific session, ordered by round number.
@@ -295,13 +296,13 @@ namespace DealtHands.Services
                 .ToListAsync();
         }
 
-
         #endregion
 
         #region Card Assignment and Submission
 
         /// <summary>
-        /// Assigns cards to players for a specific round.
+        /// Assigns round cards to players for a specific round.
+        /// Skips any player who already has a UGC record for this round to prevent duplicate key errors.
         /// </summary>
         private async Task AssignCardsToPlayersAsync(long gameRoundId, long gameSessionId, string roundType, List<long> userIds)
         {
@@ -323,6 +324,11 @@ namespace DealtHands.Services
 
             foreach (var userId in userIds)
             {
+                // Guard against duplicate assignment if this method is called more than once for the same round
+                bool alreadyAssigned = await _context.Ugcs
+                    .AnyAsync(u => u.UserId == userId && u.GameRoundId == gameRoundId);
+                if (alreadyAssigned) continue;
+
                 Card assignedCard;
 
                 switch (session.Game.Mode)
@@ -332,7 +338,7 @@ namespace DealtHands.Services
                         break;
 
                     case "ChooseFromFour":
-                        // Placeholder � actual card set when player submits their choice
+                        // Placeholder — actual card set when player submits their choice
                         assignedCard = availableCards.First();
                         break;
 
@@ -345,6 +351,7 @@ namespace DealtHands.Services
                 {
                     UserId = userId,
                     CardId = assignedCard.CardId,
+                    GameChangerId = null,
                     GameRoundId = gameRoundId,
                     GameSessionId = gameSessionId,
                     AssignedAt = DateTime.UtcNow,
@@ -360,9 +367,6 @@ namespace DealtHands.Services
             await _context.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Gets 4 random cards for a player to choose from in ChooseFromFour mode.
-        /// </summary>
         public async Task<List<Card>> GetChoiceCardsForRoundAsync(string roundType, int count = 4)
         {
             var cards = await _context.Cards
@@ -383,36 +387,45 @@ namespace DealtHands.Services
                 .Include(u => u.Card)
                 .FirstOrDefaultAsync(u => u.UserId == userId
                     && u.GameRoundId == gameRoundId
-                    && u.Card.CardType == "RoundCard");
+                    && u.CardId != null);
         }
 
-        /// <summary>
-        /// Processes a player's card choice.
-        /// For ChooseFromFour, updates the UGC with the chosen card.
-        /// SubmittedAmount should be positive for Career (income) and negative for all other rounds (expenses).
-        /// </summary>
         public async Task<bool> SubmitPlayerChoiceAsync(long userId, long gameRoundId, int chosenCardId, decimal submittedAmount)
         {
             var ugc = await _context.Ugcs
-                .FirstOrDefaultAsync(u => u.UserId == userId && u.GameRoundId == gameRoundId);
+                .FirstOrDefaultAsync(u => u.UserId == userId
+                    && u.GameRoundId == gameRoundId
+                    && u.CardId != null);
 
             if (ugc == null || ugc.SubmittedAt != null)
-                return false; // Already submitted or doesn't exist
+                return false;
 
             ugc.CardId = chosenCardId;
             ugc.SubmittedAmount = submittedAmount;
             ugc.SubmittedAt = DateTime.UtcNow;
             ugc.RunningTotal = await CalculateRunningTotalAsync(userId, ugc.GameSessionId, submittedAmount);
 
+            var card = await _context.Cards.FindAsync(chosenCardId);
+            if (card != null && card.CardType == "RoundCard")
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    if (card.SetsStudentLoans.HasValue) user.HasStudentLoans = card.SetsStudentLoans.Value;
+                    if (card.SetsCar.HasValue) user.HasCar = card.SetsCar.Value;
+                    if (card.SetsCarLoan.HasValue) user.HasCarLoan = card.SetsCarLoan.Value;
+                    if (card.SetsOwnsHome.HasValue) user.OwnsHome = card.SetsOwnsHome.Value;
+                    if (card.SetsApartment.HasValue) user.HasApartment = card.SetsApartment.Value;
+                    if (card.SetsRoommate.HasValue) user.HasRoommate = card.SetsRoommate.Value;
+                    if (card.SetsMarried.HasValue) user.IsMarried = card.SetsMarried.Value;
+                    if (card.SetsChildren.HasValue) user.HasChildren = card.SetsChildren.Value;
+                }
+            }
+
             await _context.SaveChangesAsync();
             return true;
         }
 
-        /// <summary>
-        /// Calculates the running total for a player in a session.
-        /// Running total represents the player's net monthly position after all rounds.
-        /// Career round adds income; all other rounds subtract expenses.
-        /// </summary>
         private async Task<decimal> CalculateRunningTotalAsync(long userId, long gameSessionId, decimal currentRoundAmount)
         {
             var priorUgc = await _context.Ugcs
@@ -447,32 +460,92 @@ namespace DealtHands.Services
         }
 
         /// <summary>
-        /// Assigns a random game changer card to a player for the current round.
+        /// Assigns a random game changer to a player for the current round.
+        /// Filters by round type, session difficulty, and player state flags.
+        /// If no candidates match the player's flags, no game changer is assigned.
+        /// Applies Sets* flags to the player's User record immediately on assignment.
         /// </summary>
         public async Task<Ugc?> AssignGameChangerAsync(long userId, long gameRoundId, long gameSessionId, string roundType)
         {
-            var gameChangerCard = await _context.Cards
-                .Where(c => c.CardType == "GameChangerCard"
-                         && c.RoundType == roundType
-                         && c.IsActive)
-                .OrderBy(x => Guid.NewGuid())
-                .FirstOrDefaultAsync();
+            // Guard against duplicate game changer assignment for the same player/round
+            bool alreadyAssigned = await _context.Ugcs
+                .AnyAsync(u => u.UserId == userId && u.GameRoundId == gameRoundId && u.GameChangerId != null);
+            if (alreadyAssigned) return null;
 
-            if (gameChangerCard == null)
+            var user = await _context.Users.FindAsync(userId);
+            var session = await _context.GameSessions.FindAsync(gameSessionId);
+
+            // Convert difficulty string to numeric level for filtering
+            byte sessionDifficulty = (session?.Difficulty) switch
+            {
+                "Easy" => 1,
+                "Medium" => 2,
+                "Hard" => 3,
+                _ => 2
+            };
+
+            // Load candidates from GameChanger table filtered by round type and difficulty
+            var candidates = await _context.GameChangers
+                .Where(g => g.RoundType == roundType
+                         && g.IsActive
+                         && g.DifficultyLevel <= sessionDifficulty)
+                .ToListAsync();
+
+            // Filter in memory by player state flags
+            // NULL = don't care, true = must have, false = must not have
+            if (user != null)
+            {
+                candidates = candidates.Where(g =>
+                    (!g.RequiresStudentLoans.HasValue || g.RequiresStudentLoans.Value == user.HasStudentLoans) &&
+                    (!g.RequiresCar.HasValue || g.RequiresCar.Value == user.HasCar) &&
+                    (!g.RequiresCarLoan.HasValue || g.RequiresCarLoan.Value == user.HasCarLoan) &&
+                    (!g.RequiresOwnsHome.HasValue || g.RequiresOwnsHome.Value == user.OwnsHome) &&
+                    (!g.RequiresApartment.HasValue || g.RequiresApartment.Value == user.HasApartment) &&
+                    (!g.RequiresRoommate.HasValue || g.RequiresRoommate.Value == user.HasRoommate) &&
+                    (!g.RequiresMarried.HasValue || g.RequiresMarried.Value == user.IsMarried) &&
+                    (!g.RequiresChildren.HasValue || g.RequiresChildren.Value == user.HasChildren) &&
+                    (!g.RequiresJob.HasValue || g.RequiresJob.Value == user.HasJob)
+                ).ToList();
+            }
+
+            // If no candidates match the player's flags, do not assign a game changer.
+            // Falling back to flag-free filtering would assign cards that make no sense
+            // for this player's situation (e.g. a loan card to a player with no loans).
+            if (!candidates.Any())
                 return null;
 
-            decimal impact = gameChangerCard.MonthlyAmount ?? 0;
+            var gameChanger = candidates[_random.Next(candidates.Count)];
+
+            // Only MonthlyAmount is stored as SubmittedAmount on the UGC row (one-time balance hit).
+            // IncomeEffect, IncomeEffectPercent, and ExpenseEffect are read directly from the
+            // GameChanger record each time financial state is calculated — they are not stored on UGC.
+            decimal oneTimeImpact = gameChanger.MonthlyAmount ?? 0;
+
+            // Apply Sets* flags to the player's state immediately
+            if (user != null)
+            {
+                if (gameChanger.SetsStudentLoans.HasValue) user.HasStudentLoans = gameChanger.SetsStudentLoans.Value;
+                if (gameChanger.SetsCar.HasValue) user.HasCar = gameChanger.SetsCar.Value;
+                if (gameChanger.SetsCarLoan.HasValue) user.HasCarLoan = gameChanger.SetsCarLoan.Value;
+                if (gameChanger.SetsOwnsHome.HasValue) user.OwnsHome = gameChanger.SetsOwnsHome.Value;
+                if (gameChanger.SetsApartment.HasValue) user.HasApartment = gameChanger.SetsApartment.Value;
+                if (gameChanger.SetsRoommate.HasValue) user.HasRoommate = gameChanger.SetsRoommate.Value;
+                if (gameChanger.SetsMarried.HasValue) user.IsMarried = gameChanger.SetsMarried.Value;
+                if (gameChanger.SetsChildren.HasValue) user.HasChildren = gameChanger.SetsChildren.Value;
+                if (gameChanger.SetsJob.HasValue) user.HasJob = gameChanger.SetsJob.Value;
+            }
 
             var ugc = new Ugc
             {
                 UserId = userId,
-                CardId = gameChangerCard.CardId,
+                CardId = null,
+                GameChangerId = gameChanger.GameChangerId,
                 GameRoundId = gameRoundId,
                 GameSessionId = gameSessionId,
                 AssignedAt = DateTime.UtcNow,
-                SubmittedAmount = impact,
+                SubmittedAmount = oneTimeImpact,
                 SubmittedAt = DateTime.UtcNow, // Auto-applied
-                RunningTotal = await CalculateRunningTotalAsync(userId, gameSessionId, impact),
+                RunningTotal = await CalculateRunningTotalAsync(userId, gameSessionId, oneTimeImpact),
                 IsActive = true
             };
 
@@ -488,10 +561,18 @@ namespace DealtHands.Services
         public async Task<Ugc?> GetPlayerGameChangerAsync(long userId, long gameRoundId)
         {
             return await _context.Ugcs
-                .Include(u => u.Card)
+                .Include(u => u.GameChanger)
                 .FirstOrDefaultAsync(u => u.UserId == userId
                     && u.GameRoundId == gameRoundId
-                    && u.Card.CardType == "GameChangerCard");
+                    && u.GameChangerId != null);
+        }
+
+        /// <summary>
+        /// Gets a GameChanger by its primary key. Used by the Round page overlay.
+        /// </summary>
+        public async Task<GameChanger?> GetGameChangerByIdAsync(int gameChangerId)
+        {
+            return await _context.GameChangers.FindAsync(gameChangerId);
         }
 
         #endregion
@@ -500,13 +581,21 @@ namespace DealtHands.Services
 
         /// <summary>
         /// Computes the current financial state for a player based on their UGC history.
-        /// Career round = monthly income. All other rounds = monthly expenses.
-        /// Game changers affect the available balance but not recurring income/expenses.
+        ///
+        /// Two-pass calculation:
+        ///   Pass 1: Establish base monthly income (Career round) and base expenses (all other rounds).
+        ///           BaseMonthlyIncome and BaseMonthlyExpenses are captured here before any GC effects.
+        ///   Pass 2: Apply game changer effects — IncomeEffectPercent and IncomeEffect modify income,
+        ///           ExpenseEffect modifies expenses, MonthlyAmount is a one-time balance adjustment.
+        ///
+        /// BaseMonthlyIncome is exposed on the DTO so the GC overlay can compute real dollar
+        /// amounts for percentage-based cards (e.g. Laid Off = -100% of base income).
         /// </summary>
         public async Task<PlayerFinancialState> GetPlayerFinancialStateAsync(long userId, long gameSessionId)
         {
             var ugcs = await _context.Ugcs
                 .Include(u => u.Card)
+                .Include(u => u.GameChanger)
                 .Include(u => u.GameRound)
                 .Where(u => u.UserId == userId
                     && u.GameSessionId == gameSessionId
@@ -518,28 +607,48 @@ namespace DealtHands.Services
             decimal gameChangerBalance = 0;
             byte currentRound = 0;
 
-            foreach (var ugc in ugcs)
+            // Pass 1: Establish base income and expenses from round card submissions
+            foreach (var ugc in ugcs.Where(u => u.GameChangerId == null))
             {
                 var amount = ugc.SubmittedAmount ?? 0;
                 var roundType = ugc.GameRound?.RoundType;
 
-                if (ugc.Card?.CardType == "GameChangerCard")
-                {
-                    // Game changers are one-time balance adjustments
-                    gameChangerBalance += amount;
-                    continue;
-                }
-
                 if (roundType == "Career")
-                    monthlyIncome = amount; // Career sets monthly income (positive)
+                    monthlyIncome = amount;
                 else
-                    monthlyExpenses += Math.Abs(amount); // All other rounds are monthly expenses
+                    monthlyExpenses += Math.Abs(amount);
 
                 if (ugc.GameRound != null && ugc.GameRound.RoundNumber > currentRound)
                     currentRound = ugc.GameRound.RoundNumber;
             }
 
-            decimal available = monthlyIncome - monthlyExpenses;
+            // Capture base values before GC effects for percentage display in the overlay
+            decimal baseMonthlyIncome = monthlyIncome;
+            decimal baseMonthlyExpenses = monthlyExpenses;
+
+            // Pass 2: Apply game changer effects on top of base income/expenses
+            foreach (var ugc in ugcs.Where(u => u.GameChangerId != null))
+            {
+                var gc = ugc.GameChanger;
+                if (gc == null) continue;
+
+                // One-time balance hit (e.g. DUI fine, medical bill, bonus payout)
+                gameChangerBalance += ugc.SubmittedAmount ?? 0;
+
+                // Percentage-based income modifier (e.g. Laid Off = -1.0, Promoted = +0.15)
+                if (gc.IncomeEffectPercent.HasValue)
+                    monthlyIncome = Math.Max(0, monthlyIncome * (1m + gc.IncomeEffectPercent.Value));
+
+                // Flat income modifier (e.g. Wage Garnishment = -350, Spouse Got a Raise = +550)
+                if (gc.IncomeEffect.HasValue)
+                    monthlyIncome = Math.Max(0, monthlyIncome + gc.IncomeEffect.Value);
+
+                // Flat expense modifier (e.g. Rent Increase = +200, Roommate Found = -450)
+                if (gc.ExpenseEffect.HasValue)
+                    monthlyExpenses = Math.Max(0, monthlyExpenses + gc.ExpenseEffect.Value);
+            }
+
+            decimal available = monthlyIncome - monthlyExpenses + gameChangerBalance;
             decimal percentageAvailable = monthlyIncome > 0 ? (available / monthlyIncome) * 100 : 0;
 
             string financialHealth = percentageAvailable >= 30 ? "Healthy"
@@ -554,7 +663,9 @@ namespace DealtHands.Services
                 Available = available,
                 GameChangerBalance = gameChangerBalance,
                 FinancialHealth = financialHealth,
-                CurrentRound = currentRound
+                CurrentRound = currentRound,
+                BaseMonthlyIncome = baseMonthlyIncome,
+                BaseMonthlyExpenses = baseMonthlyExpenses
             };
         }
 
@@ -568,18 +679,23 @@ namespace DealtHands.Services
         /// </summary>
         public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(long gameSessionId)
         {
-            var leaderboard = await _context.Ugcs
+            var allUgcs = await _context.Ugcs
+                .Include(u => u.User)
                 .Where(u => u.GameSessionId == gameSessionId && u.SubmittedAt != null)
+                .OrderByDescending(u => u.SubmittedAt)
+                .ToListAsync();
+
+            var leaderboard = allUgcs
                 .GroupBy(u => u.UserId)
                 .Select(g => new LeaderboardEntry
                 {
                     UserId = g.Key,
                     Username = g.First().User.Username,
-                    CurrentScore = g.Max(u => u.RunningTotal) ?? 0,
+                    CurrentScore = g.First().RunningTotal ?? 0,
                     CardsSubmitted = g.Count()
                 })
                 .OrderByDescending(l => l.CurrentScore)
-                .ToListAsync();
+                .ToList();
 
             return leaderboard;
         }
@@ -591,6 +707,7 @@ namespace DealtHands.Services
         {
             return await _context.Ugcs
                 .Include(u => u.Card)
+                .Include(u => u.GameChanger)
                 .Include(u => u.GameRound)
                 .Where(u => u.UserId == userId && u.GameSessionId == gameSessionId)
                 .OrderBy(u => u.AssignedAt)
@@ -599,24 +716,28 @@ namespace DealtHands.Services
 
         /// <summary>
         /// Gets all results for a specific round with card details.
+        /// Includes both round card submissions and game changer assignments.
         /// </summary>
         public async Task<List<RoundResult>> GetRoundResultsAsync(long gameRoundId)
         {
-            return await _context.Ugcs
+            var ugcs = await _context.Ugcs
                 .Include(u => u.User)
                 .Include(u => u.Card)
+                .Include(u => u.GameChanger)
                 .Where(u => u.GameRoundId == gameRoundId)
-                .Select(u => new RoundResult
-                {
-                    Username = u.User.Username,
-                    CardTitle = u.Card.Title,
-                    CorrectAmount = u.Card.MonthlyAmount ?? 0,
-                    SubmittedAmount = u.SubmittedAmount,
-                    RunningTotal = u.RunningTotal,
-                    IsSubmitted = u.SubmittedAt != null
-                })
-                .OrderByDescending(r => r.RunningTotal)
                 .ToListAsync();
+
+            return ugcs.Select(u => new RoundResult
+            {
+                Username = u.User.Username,
+                CardTitle = u.Card?.Title ?? u.GameChanger?.Title ?? string.Empty,
+                CorrectAmount = u.Card?.MonthlyAmount ?? u.GameChanger?.MonthlyAmount ?? 0,
+                SubmittedAmount = u.SubmittedAmount,
+                RunningTotal = u.RunningTotal,
+                IsSubmitted = u.SubmittedAt != null
+            })
+            .OrderByDescending(r => r.RunningTotal)
+            .ToList();
         }
 
         #endregion
@@ -656,13 +777,15 @@ namespace DealtHands.Services
 
     public class PlayerFinancialState
     {
-        public decimal Salary { get; set; }           // Annual estimate (MonthlyIncome * 12)
-        public decimal MonthlyIncome { get; set; }    // From Career round
-        public decimal MonthlyExpenses { get; set; }  // Sum of all non-Career round costs
-        public decimal Available { get; set; }         // MonthlyIncome - MonthlyExpenses
-        public decimal GameChangerBalance { get; set; } // One-time game changer adjustments
+        public decimal Salary { get; set; }              // Annual estimate (MonthlyIncome * 12)
+        public decimal MonthlyIncome { get; set; }       // From Career round, modified by game changers
+        public decimal MonthlyExpenses { get; set; }     // Sum of all non-Career round costs, modified by game changers
+        public decimal Available { get; set; }            // MonthlyIncome - MonthlyExpenses + GameChangerBalance
+        public decimal GameChangerBalance { get; set; }  // One-time game changer balance adjustments
         public string FinancialHealth { get; set; } = "Healthy"; // Healthy / Struggling / Critical
-        public byte CurrentRound { get; set; }        // Most recently completed round number
+        public byte CurrentRound { get; set; }           // Most recently completed round number
+        public decimal BaseMonthlyIncome { get; set; }   // Income before GC effects — used for percentage display
+        public decimal BaseMonthlyExpenses { get; set; } // Expenses before GC effects — used for percentage display
     }
 
     #endregion

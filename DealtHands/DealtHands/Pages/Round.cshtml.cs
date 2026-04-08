@@ -25,6 +25,7 @@ namespace DealtHands.Pages
         public GameSession Session { get; set; }
         public PlayerFinancialState FinancialState { get; set; }
         public string WaitingMessage { get; set; }
+        public GameChanger? PendingGameChanger { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -55,6 +56,10 @@ namespace DealtHands.Pages
 
             if (Session.Status == "Paused")
                 return RedirectToPage("/JoinSession");
+
+            // Load pending game changer from TempData if one was just assigned
+            if (TempData["PendingGameChangerId"] is string gcIdStr && int.TryParse(gcIdStr, out int gcId))
+                PendingGameChanger = await _gameSessionService.GetGameChangerByIdAsync(gcId);
 
             CurrentRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
             if (CurrentRound == null)
@@ -139,7 +144,11 @@ namespace DealtHands.Pages
                     userId, CurrentRound.GameRoundId, gameSessionId, CurrentRound.RoundType);
 
                 if (gc != null)
-                    return RedirectToPage("/GameChanger");
+                {
+                    // Store game changer ID in TempData and show as overlay on the Round page
+                    TempData["PendingGameChangerId"] = gc.GameChangerId.ToString();
+                    return RedirectToPage("/Round");
+                }
             }
 
             TempData["WaitingMessage"] = "Choice submitted! Waiting for the educator to advance to the next round...";
@@ -192,7 +201,7 @@ namespace DealtHands.Pages
             {
                 gameCompleted = false,
                 currentRoundClosed = openRound == null, // No open round = current round closed
-                newRoundOpen = openRound != null, // Open round exists = new round available
+                newRoundOpen = openRound != null,        // Open round exists = new round available
                 playerSubmitted = playerSubmitted
             });
         }

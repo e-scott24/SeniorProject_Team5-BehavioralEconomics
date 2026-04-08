@@ -8,35 +8,43 @@ namespace DealtHands.Pages
     public class GameChangerModel : PageModel
     {
         private readonly GameSessionService _gameSessionService;
+        private readonly IAuthenticationService _authService;
 
-        public GameChangerModel(GameSessionService gameSessionService)
+        public GameChangerModel(GameSessionService gameSessionService, IAuthenticationService authService)
         {
             _gameSessionService = gameSessionService;
+            _authService = authService;
         }
 
-        // The game changer UGC record (contains the Card with title, description, and financial impact)
         public Ugc GameChangerUgc { get; set; }
+        public PlayerFinancialState? FinancialState { get; set; }
 
-        public async Task<IActionResult> OnGetAsync()
+        public async Task<IActionResult>
+    OnGetAsync()
         {
-            // Hard stop — educators never receive game changers
-            if (HttpContext.Session.GetString("Role") == "Educator")
+            // Hard stop â€” educators never receive game changers
+            if (_authService.IsEducator)
             {
-                var code = HttpContext.Session.GetString("SessionCode");
+                var code = _authService.SessionCode;
                 return !string.IsNullOrEmpty(code)
-                    ? RedirectToPage("/Lobby", new { sessionCode = code })
-                    : RedirectToPage("/EducatorDashboard");
+                ? RedirectToPage("/Lobby", new { sessionCode = code })
+                : RedirectToPage("/EducatorDashboard");
             }
 
-            if (!long.TryParse(HttpContext.Session.GetString("UserId"), out long userId))
-                return RedirectToPage("/JoinSession");
-            if (!long.TryParse(HttpContext.Session.GetString("GameSessionId"), out long gameSessionId))
+            if (!_authService.UserId.HasValue)
                 return RedirectToPage("/JoinSession");
 
-            // Find the open round to look up the game changer assigned to this player
+            if (!_authService.GameSessionId.HasValue)
+                return RedirectToPage("/JoinSession");
+
+            long userId = _authService.UserId.Value;
+            long gameSessionId = _authService.GameSessionId.Value;
+
             var openRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
             if (openRound != null)
                 GameChangerUgc = await _gameSessionService.GetPlayerGameChangerAsync(userId, openRound.GameRoundId);
+
+            FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
 
             return Page();
         }

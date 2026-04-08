@@ -1,9 +1,8 @@
-﻿@page
+@page
 @model DealtHands.Pages.RoundModel
 @{
     ViewData["Title"] = Model.CurrentRound?.RoundType ?? "Round";
 }
-
 
 <!-- Hidden data attributes for JavaScript -->
 <div data-role="student"
@@ -11,7 +10,6 @@
      data-session-id="@Model.Session?.GameSessionId"
      style="display:none;">
 </div>
-
 
 <h2>ROUND @Model.CurrentRound?.RoundNumber: @Model.CurrentRound?.RoundType?.ToUpper()</h2>
 
@@ -33,8 +31,27 @@ else if (Model.CurrentRound == null)
 {
     <p>Waiting for the educator to open the round...</p>
 }
+else if (Model.AssignedCard != null)
+{
+    <!-- RandomAssigned mode: player receives one card and confirms it -->
+    <form method="post" asp-page-handler="SelectChoice">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>@Model.AssignedCard.Card.Title</h5>
+                <p>@Model.AssignedCard.Card.Description</p>
+                <p><strong>$@Model.AssignedCard.Card.MonthlyAmount?.ToString("N0") / month</strong></p>
+                <button type="submit" name="chosenCardId" value="@Model.AssignedCard.Card.CardId"
+                        onclick="document.getElementById('submittedAmount').value = '@Model.AssignedCard.Card.MonthlyAmount'">
+                    Select
+                </button>
+            </div>
+        </div>
+        <input type="hidden" id="submittedAmount" name="submittedAmount" value="0" />
+    </form>
+}
 else
 {
+    <!-- ChooseFromFour mode: player picks from multiple cards -->
     <form method="post" asp-page-handler="SelectChoice">
         @foreach (var card in Model.Cards)
         {
@@ -52,6 +69,159 @@ else
         }
         <input type="hidden" id="submittedAmount" name="submittedAmount" value="0" />
     </form>
+}
+
+@if (Model.PendingGameChanger != null)
+{
+    var gc = Model.PendingGameChanger;
+    var baseIncome = Model.FinancialState?.BaseMonthlyIncome ?? 0;
+
+    bool isPositive;
+    string effectLabel;
+    string effectAmount;
+
+    if (gc.IncomeEffectPercent != null)
+    {
+        var pct = gc.IncomeEffectPercent.Value;
+        var dollars = Math.Abs(baseIncome * pct);
+        isPositive = pct >= 0;
+        effectLabel = isPositive ? "Income Increase" : "Income Reduction";
+        effectAmount = (isPositive ? "+" : "-") + "$" + dollars.ToString("N0") + " / mo (" + (isPositive ? "+" : "") + (pct * 100m).ToString("0") + "%)";
+    }
+    else if (gc.IncomeEffect != null)
+    {
+        var val = gc.IncomeEffect.Value;
+        isPositive = val >= 0;
+        effectLabel = isPositive ? "Monthly Income Boost" : "Monthly Income Loss";
+        effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+    }
+    else if (gc.ExpenseEffect != null)
+    {
+        var val = gc.ExpenseEffect.Value;
+        isPositive = val <= 0;
+        effectLabel = isPositive ? "Monthly Savings" : "Monthly Added Cost";
+        effectAmount = (isPositive ? "-" : "+") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+    }
+    else
+    {
+        var val = gc.MonthlyAmount ?? 0;
+        isPositive = val >= 0;
+        effectLabel = isPositive ? "One-Time Bonus" : "One-Time Penalty";
+        effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0");
+    }
+
+    var headerColor = isPositive ? "#22c55e" : "#dc2626";
+    var accentColor = isPositive ? "#16a34a" : "#dc2626";
+    var darkColor = isPositive ? "#15803d" : "#991b1b";
+    var lightBg = isPositive ? "#f0fdf4" : "#fef2f2";
+    var borderColor = isPositive ? "#bbf7d0" : "#fecaca";
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <div id="gc-overlay" style="
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.65);
+            display: flex; align-items: center; justify-content: center;">
+
+        <div style="
+                width: 440px; max-height: 90vh;
+                background: #ffffff;
+                border-radius: 16px;
+                border: 2px solid @borderColor;
+                overflow: hidden;
+                display: flex; flex-direction: column;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 20px 40px rgba(0,0,0,0.4);
+                animation: gc-rise 0.5s cubic-bezier(0.22,1,0.36,1) both;">
+
+            <div style="
+                    padding: 16px 20px;
+                    background: @headerColor;
+                    position: relative; overflow: hidden;
+                    display: flex; align-items: center; justify-content: center;
+                    min-height: 62px; flex-shrink: 0;">
+                <div style="
+                        position: absolute; inset: 0;
+                        background: repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,0.08) 8px,rgba(255,255,255,0.08) 16px);">
+                </div>
+                <span style="
+                        font-family: 'Playfair Display', serif;
+                        font-size: 1.45rem; font-weight: 900;
+                        letter-spacing: 0.12em; color: #fff;
+                        text-transform: uppercase;
+                        position: relative; z-index: 1;
+                        text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
+            </div>
+
+            <div style="
+                    padding: 16px 20px 18px;
+                    background: #fff; flex: 1;
+                    display: flex; flex-direction: column;
+                    overflow-y: auto;">
+
+                <h1 style="
+                        font-family: 'Playfair Display', serif;
+                        font-size: 1.65rem; font-weight: 700;
+                        color: #111827; line-height: 1.15;
+                        margin-bottom: 10px;">
+                    @gc.Title
+                </h1>
+
+                <p style="
+                        font-size: 0.875rem; color: #374151;
+                        line-height: 1.6; margin-bottom: 12px;
+                        flex: 1;">@gc.Description</p>
+
+                <p style="
+                        font-size: 0.63rem; font-weight: 700;
+                        letter-spacing: 0.18em; text-transform: uppercase;
+                        color: #6b7280; margin-bottom: 6px;">Financial Impact</p>
+
+                <div style="
+                        border-radius: 10px; border: 1.5px solid @borderColor;
+                        padding: 12px 14px; margin-bottom: 8px;
+                        background: @lightBg;
+                        display: flex; flex-direction: column; gap: 2px;">
+                    <span style="
+                            font-size: 0.65rem; font-weight: 600;
+                            letter-spacing: 0.14em; text-transform: uppercase;
+                            color: @accentColor; margin-bottom: 4px;">@effectLabel</span>
+                    <span style="
+                            font-family: 'Playfair Display', serif;
+                            font-size: 1.75rem; font-weight: 700;
+                            color: @darkColor;">@effectAmount</span>
+                </div>
+
+                <hr style="border: none; border-top: 1.5px solid @borderColor; margin: 8px 0 12px;" />
+
+                <button onclick="document.getElementById('gc-overlay').style.display='none'" style="
+                        display: block; width: 100%; padding: 13px;
+                        background: @accentColor; color: #fff;
+                        border: none; border-radius: 999px;
+                        font-family: 'DM Sans', sans-serif;
+                        font-size: 0.92rem; font-weight: 600;
+                        letter-spacing: 0.03em; cursor: pointer;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @@keyframes gc-rise {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
 }
 
 @section Scripts {

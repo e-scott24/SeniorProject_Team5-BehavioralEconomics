@@ -1,6 +1,6 @@
 ﻿@*  Name: Jason Black
     Date: 2/23/2026
-    Last Update: 3/16/2026
+    Last Update: 4/8/2026
 
     Dave Ramsey zero-based budget calculator — markup, CSS, and mobile behavior.
     All budget logic exists in calculator.js. Layout and navigation are in _Layout.cshtml.
@@ -95,7 +95,7 @@
                 </div>
 
                 <div class="calc-btn-row">
-                    <button class="calc-btn calc-btn-reset" id="c-btn-reset">↺ Reset All</button>
+                    <button type="button" class="calc-btn calc-btn-reset" id="c-btn-reset">↺ Reset All</button>
                 </div>
 
             </div>
@@ -104,7 +104,7 @@
             <div class="calc-summary-col">
 
                 @* Mobile only — tapping toggles aria-expanded and CSS does the rest (show/hide card + rotate chevron) *@
-                <button class="calc-snapshot-toggle" id="c-snapshot-toggle"
+                <button type="button" class="calc-snapshot-toggle" id="c-snapshot-toggle"
                         aria-expanded="false" aria-controls="c-snapshot-card">
                     <span>Budget Snapshot</span>
                     <span class="calc-snapshot-chevron">▲</span>
@@ -197,7 +197,7 @@
     }
 
     /* overflow:clip keeps header corners clean without creating a scroll context —
-           scrolling is owned by .calc-page-wrap instead */
+               scrolling is owned by .calc-page-wrap instead */
     .calc-model-box {
         background: var(--calc-cream);
         border-radius: 16px;
@@ -497,8 +497,8 @@
     }
 
     /*  No internal scroll — the outer .calc-page-wrap scrolls the model.
-        This keeps expenses in the same scroll context as income so there's
-        no nested scrollbar pushing content left and misaligning the inputs. */
+            This keeps expenses in the same scroll context as income so there's
+            no nested scrollbar pushing content left and misaligning the inputs. */
     .calc-expenses-scroll {
         position: relative;
     }
@@ -604,7 +604,7 @@
         transition: border-color .18s, box-shadow .18s;
         outline: none;
         /*  max() keeps the rendered size at 16px+ on mobile so iOS doesn't
-            auto-zoom the viewport when the input is focused */
+                auto-zoom the viewport when the input is focused */
         font-size: max(.875rem, 16px);
         /* Hides spinner arrows for mobile */
         -moz-appearance: textfield;
@@ -749,6 +749,7 @@
         .calc-snapshot-toggle[aria-expanded="false"] + #c-snapshot-card {
             display: none;
         }
+
         #c-snapshot-card .calc-card-header {
             display: none;
         }
