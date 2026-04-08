@@ -47,4 +47,8 @@ public partial class GameChanger
     public bool? SetsJob { get; set; }
 
     public virtual ICollection<Ugc> Ugcs { get; set; } = new List<Ugc>();
+
+    // Navigation property for link table (not used yet, but prevents EF errors)
+    public virtual ICollection<GameChangerLifeSituation> GameChangerLifeSituations { get; set; } = new List<GameChangerLifeSituation>();
+
 }
