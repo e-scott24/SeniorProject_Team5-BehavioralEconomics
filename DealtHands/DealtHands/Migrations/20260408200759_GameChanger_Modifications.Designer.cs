@@ -4,6 +4,7 @@ using DealtHands.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DealtHands.Migrations
 {
     [DbContext(typeof(DealtHandsDbv2Context))]
-    partial class DealtHandsDbv2ContextModelSnapshot : ModelSnapshot
+    [Migration("20260408200759_GameChanger_Modifications")]
+    partial class GameChanger_Modifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
