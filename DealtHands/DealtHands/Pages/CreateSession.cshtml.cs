@@ -44,8 +44,13 @@ namespace DealtHands.Pages
             if (!_authService.IsEducator || !_authService.UserId.HasValue)
                 return RedirectToPage("/Login");
 
+            // Map game mode selection to the corresponding Game row
+            // GameId 1 = RandomAssigned, GameId 2 = ChooseFromFour
+            long gameId = GameMode == "ChooseFromFour" ? 2 : 1;
+
             var session = await _gameSessionService.CreateSessionAsync(
                 _authService.UserId.Value,
+                gameId,
                 SessionName,
                 Difficulty);
 

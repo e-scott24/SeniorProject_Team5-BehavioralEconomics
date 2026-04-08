@@ -23,6 +23,7 @@ namespace DealtHands.Pages
 
         public List<GameSession> ActiveSessions { get; set; } = new List<GameSession>();
         public List<GameSession> CompletedSessions { get; set; } = new List<GameSession>();
+        public string? EducatorName => _authService.Username;
 
         public async Task<IActionResult> OnGetAsync()
         {

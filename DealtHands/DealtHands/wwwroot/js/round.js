@@ -16,6 +16,9 @@ if (!isStudent) {
     }
 
     async function checkRoundStatus() {
+        // Do not poll while the game changer overlay is visible
+        if (document.getElementById('gc-overlay')) return;
+
         try {
             const response = await fetch(`/Round?handler=CheckRoundStatus&gameSessionId=${gameSessionId}`);
             const data = await response.json();

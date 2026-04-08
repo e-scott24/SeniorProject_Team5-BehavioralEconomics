@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model DealtHands.Pages.CreateSessionModel
 @{
     ViewData["Title"] = "Create Session";
@@ -42,7 +42,7 @@
                                        class="btn-check"
                                        name="GameMode"
                                        id="random"
-                                       value="Random"
+                                       value="RandomAssigned"
                                        asp-for="GameMode"
                                        checked>
                                 <label class="btn btn-outline-primary" for="random">Random Selection</label>
@@ -51,7 +51,7 @@
                                        class="btn-check"
                                        name="GameMode"
                                        id="structured"
-                                       value="Structured"
+                                       value="ChooseFromFour"
                                        asp-for="GameMode">
                                 <label class="btn btn-outline-primary" for="structured">Structured Play</label>
                             </div>

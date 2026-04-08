@@ -1,6 +1,5 @@
-﻿@page
+@page
 @model DealtHands.Pages.EducatorDashboardModel
-
 @{
     ViewData["Title"] = "Educator Dashboard";
 }
@@ -9,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>My Sessions</h2>
         <div>
-            <span class="me-3">Welcome, @HttpContext.Session.GetString("EducatorName")</span>
+            <span class="me-3">Welcome, @Model.EducatorName</span>
             <a href="/Logout" class="btn btn-sm btn-outline-secondary">Logout</a>
         </div>
     </div>
@@ -25,7 +24,7 @@
                     <th>Name</th>
                     <th>Code</th>
                     <th>Mode</th>
-                    <th>Players</th>
+                    <th>Max Players</th>
                     <th>Round</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -38,7 +37,7 @@
                         <td>@session.Name</td>
                         <td><strong>@session.JoinCode</strong></td>
                         <td>@session.Game?.Mode</td>
-                        <td>SessionTracker / @session.Game?.MaxPlayers</td>
+                        <td>@session.Game?.MaxPlayers</td>
                         <td>@session.CurrentRoundNumber / 5</td>
                         <td>@session.CreatedAt.ToShortDateString()</td>
                         <td>
@@ -62,7 +61,6 @@
                 <tr>
                     <th>Name</th>
                     <th>Mode</th>
-                    <th>Players</th>
                     <th>Completed</th>
                     <th>Actions</th>
                 </tr>
@@ -73,14 +71,10 @@
                     <tr>
                         <td>@session.Name</td>
                         <td>@session.Game?.Mode</td>
-                        <!-- <td> session.Players.Count</td> -->
-                        <td>@session.CreatedAt.ToShortDateString()</td>
+                        <td>@session.EndedAt?.ToShortDateString()</td>
                         <td>
                             <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
-                        </td>
-                        <!-- "Soft delete" button (doesn't actually delete it from DB, just sets the active status to false)-->
-                        <td>
-                            <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
+                            <!-- "Soft delete" button (doesn't actually delete it from DB, just sets the active status to false)-->
                             <form method="post" style="display:inline;" asp-page-handler="ArchiveSession">
                                 <input type="hidden" name="sessionId" value="@session.GameSessionId" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger"

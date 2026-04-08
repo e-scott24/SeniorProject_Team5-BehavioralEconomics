@@ -1,6 +1,6 @@
 ﻿/*  Name: Jason Black
     Date: 2/23/2026
-    Last Update: 3/16/2026
+    Last Update: 4/8/2026
 
     Dave Ramsey budget calculator logic.
     Handles field generation, live calculations, donut chart, and validation.
@@ -423,8 +423,6 @@
             });
     }
 
-    // Load on page load
-    loadFinancials();
 
     // Expose reload function globally
     window.reloadCalculatorData = loadFinancials;
