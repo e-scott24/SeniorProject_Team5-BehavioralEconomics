@@ -47,4 +47,8 @@ public partial class Card
     public bool? SetsChildren { get; set; }
 
     public virtual ICollection<Ugc> Ugcs { get; set; } = new List<Ugc>();
+
+    // Navigation property for link table (not used yet, but prevents EF errors)
+    public virtual ICollection<CardLifeSituation> CardLifeSituations { get; set; } = new List<CardLifeSituation>();
 }
+

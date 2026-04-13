@@ -50,12 +50,6 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            if (session.Status != "Waiting" && session.Status != "Paused")
-            {
-                ErrorMessage = "This session has already started or is no longer accepting players.";
-                return Page();
-            }
-
             // Returning player — PlayerCode is their UserId
             if (!string.IsNullOrEmpty(PlayerCode))
             {
@@ -81,9 +75,9 @@ namespace DealtHands.Pages
             }
 
             // New player — only allowed on Waiting sessions
-            if (session.Status == "Paused")
+            if (session.Status != "Waiting")
             {
-                ErrorMessage = "This session is paused. Use your Player Code to rejoin.";
+                ErrorMessage = "This session has already started. Use your Player Code if you've joined before.";
                 return Page();
             }
 

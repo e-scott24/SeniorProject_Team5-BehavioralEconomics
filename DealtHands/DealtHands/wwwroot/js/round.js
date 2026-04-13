@@ -6,8 +6,11 @@ if (!isStudent) {
     console.log('Educator detected - no round polling');
 } else {
     let gameSessionId = document.querySelector('[data-session-id]')?.getAttribute('data-session-id');
-    let hasSubmitted = false;
-    let lastCheckTime = Date.now();
+
+    // Track the current round ID from the page
+    let currentRoundId = document.querySelector('[data-round-id]')?.getAttribute('data-round-id');
+
+    let isReloading = false; // Prevent multiple simultaneous reloads
 
     // Check if we're on the "waiting" screen
     function isOnWaitingScreen() {
@@ -16,6 +19,9 @@ if (!isStudent) {
     }
 
     async function checkRoundStatus() {
+        // Prevent overlapping checks
+        if (isReloading) return;
+
         // Do not poll while the game changer overlay is visible
         if (document.getElementById('gc-overlay')) return;
 
@@ -26,24 +32,35 @@ if (!isStudent) {
             // Game completed - go to results
             if (data.gameCompleted) {
                 console.log('Game completed, redirecting to results...');
+                isReloading = true;
                 window.location.href = '/Results';
                 return;
             }
 
-            // Track if we submitted
-            if (data.playerSubmitted) {
-                hasSubmitted = true;
+            // Enhanced round detection: Check if the open round ID is different from current
+            if (data.openRoundId && currentRoundId && data.openRoundId.toString() !== currentRoundId) {
+                console.log(`Round changed from ${currentRoundId} to ${data.openRoundId}, reloading...`);
+                isReloading = true;
+                window.location.reload();
+                return;
             }
 
-            // If we're waiting and a new round opened, reload ONCE
-            if (isOnWaitingScreen() && data.newRoundOpen && !data.currentRoundClosed) {
-                // Only reload if we haven't reloaded in the last 3 seconds (prevent reload loops)
-                const now = Date.now();
-                if (now - lastCheckTime > 3000) {
-                    console.log('New round detected, reloading...');
-                    lastCheckTime = now;
-                    window.location.reload();
-                }
+            // If we're on the waiting screen and there's an open round
+            // (this handles case where currentRoundId is null/empty)
+            if (isOnWaitingScreen() && data.newRoundOpen) {
+                console.log('New round detected while waiting, reloading...');
+                isReloading = true;
+                window.location.reload();
+                return;
+            }
+
+            // If we're NOT on waiting screen (we're looking at cards)
+            // but the current round closed, that means educator closed it
+            if (!isOnWaitingScreen() && data.currentRoundClosed) {
+                console.log('Current round was closed by educator, reloading...');
+                isReloading = true;
+                window.location.reload();
+                return;
             }
 
         } catch (err) {
@@ -51,7 +68,7 @@ if (!isStudent) {
         }
     }
 
-    // Poll every 3 seconds (not every 1 second - too aggressive)
-    setInterval(checkRoundStatus, 3000);
-    checkRoundStatus();
+    // Poll every 2 seconds for responsive updates
+    setInterval(checkRoundStatus, 2000);
+    checkRoundStatus(); // Run immediately on page load
 }

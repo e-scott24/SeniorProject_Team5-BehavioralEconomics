@@ -30,6 +30,11 @@ public partial class DealtHandsDbv2Context : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    // Link table DbSets (not used in game logic yet, but required by EF)
+    public virtual DbSet<LifeSituation> LifeSituations { get; set; }
+    public virtual DbSet<CardLifeSituation> CardLifeSituations { get; set; }
+    public virtual DbSet<GameChangerLifeSituation> GameChangerLifeSituations { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Card>(entity =>
@@ -320,6 +325,85 @@ public partial class DealtHandsDbv2Context : DbContext
             entity.Property(e => e.IsMarried).HasDefaultValue(false);
             entity.Property(e => e.HasChildren).HasDefaultValue(false);
             entity.Property(e => e.HasJob).HasDefaultValue(true);
+        });
+
+        // ============================================================================
+        // Link Table Configurations (not used in game logic yet)
+        // ============================================================================
+
+        modelBuilder.Entity<LifeSituation>(entity =>
+        {
+            entity.HasKey(e => e.LifeSituationId).HasName("PK_LifeSituation");
+
+            entity.ToTable("LifeSituation");
+
+            entity.HasIndex(e => e.Name, "UQ_LifeSituation_Name").IsUnique();
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(255)
+                .IsUnicode(false);
+
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<CardLifeSituation>(entity =>
+        {
+            entity.HasKey(e => e.CardLifeSituationId).HasName("PK_CardLifeSituation");
+
+            entity.ToTable("CardLifeSituation");
+
+            entity.HasIndex(e => e.CardId, "idx_cardlifesituation_card");
+            entity.HasIndex(e => e.LifeSituationId, "idx_cardlifesituation_lifesituation");
+            entity.HasIndex(e => e.RelationType, "idx_cardlifesituation_relation");
+
+            entity.HasIndex(e => new { e.CardId, e.LifeSituationId, e.RelationType }, "UQ_CardLifeSituation").IsUnique();
+
+            entity.Property(e => e.RelationType)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Card)
+                .WithMany(p => p.CardLifeSituations)
+                .HasForeignKey(d => d.CardId)
+                .HasConstraintName("FK_CardLifeSituation_Card");
+
+            entity.HasOne(d => d.LifeSituation)
+                .WithMany(p => p.CardLifeSituations)
+                .HasForeignKey(d => d.LifeSituationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CardLifeSituation_LifeSituation");
+        });
+
+        modelBuilder.Entity<GameChangerLifeSituation>(entity =>
+        {
+            entity.HasKey(e => e.GameChangerLifeSituationId).HasName("PK_GameChangerLifeSituation");
+
+            entity.ToTable("GameChangerLifeSituation");
+
+            entity.HasIndex(e => e.GameChangerId, "idx_gamechangerlifesituation_gamechanger");
+            entity.HasIndex(e => e.LifeSituationId, "idx_gamechangerlifesituation_lifesituation");
+            entity.HasIndex(e => e.RelationType, "idx_gamechangerlifesituation_relation");
+
+            entity.HasIndex(e => new { e.GameChangerId, e.LifeSituationId, e.RelationType }, "UQ_GameChangerLifeSituation").IsUnique();
+
+            entity.Property(e => e.RelationType)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.GameChanger)
+                .WithMany(p => p.GameChangerLifeSituations)
+                .HasForeignKey(d => d.GameChangerId)
+                .HasConstraintName("FK_GameChangerLifeSituation_GameChanger");
+
+            entity.HasOne(d => d.LifeSituation)
+                .WithMany(p => p.GameChangerLifeSituations)
+                .HasForeignKey(d => d.LifeSituationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GameChangerLifeSituation_LifeSituation");
         });
 
         OnModelCreatingPartial(modelBuilder);

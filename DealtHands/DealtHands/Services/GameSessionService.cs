@@ -657,9 +657,9 @@ namespace DealtHands.Services
 
             return new PlayerFinancialState
             {
-                Salary = monthlyIncome * 12,
-                MonthlyIncome = monthlyIncome,
-                MonthlyExpenses = monthlyExpenses,
+                Salary = baseMonthlyIncome * 12,
+                MonthlyIncome = baseMonthlyIncome,
+                MonthlyExpenses = baseMonthlyExpenses,
                 Available = available,
                 GameChangerBalance = gameChangerBalance,
                 FinancialHealth = financialHealth,

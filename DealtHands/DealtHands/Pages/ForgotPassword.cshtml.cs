@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using DealtHands.Services;
+using System.ComponentModel.DataAnnotations;
 
 namespace DealtHands.Pages
 {
@@ -14,22 +15,46 @@ namespace DealtHands.Pages
         }
 
         [BindProperty]
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; }
 
         public bool TokenGenerated { get; set; }
         public string Token { get; set; }
+        public string Message { get; set; }
 
         public void OnGet() { }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            Token = await _userService.GeneratePasswordResetTokenAsync(Email);
-
-            if (Token != null)
+            // Validate the model state
+            if (!ModelState.IsValid)
             {
-                TokenGenerated = true;
-                // TODO: Email the token link to the educator
-                // For now, just display it on the page
+                return Page();
+            }
+
+            try
+            {
+                // Generate password reset token
+                Token = await _userService.GeneratePasswordResetTokenAsync(Email);
+
+                if (Token != null)
+                {
+                    TokenGenerated = true;
+                    // TODO: Email the token link to the educator
+                    // For now, just display it on the page
+                }
+                else
+                {
+                    // Email not found - show error message
+                    Message = "No account found with that email address.";
+                }
+            }
+            catch (Exception)
+            {
+                // Log the exception in production
+                Message = "An error occurred. Please try again later.";
+                return Page();
             }
 
             return Page();
