@@ -3,6 +3,11 @@ using System.Collections.Generic;
 
 namespace DealtHands.ModelsV2;
 
+/*
+ * NOT BEING USED CURRENTLY
+ * This will be used when the DB is 
+ * switched over to using link tables
+*/
 public partial class GameChangerLifeSituation
 {
     public int GameChangerLifeSituationId { get; set; }

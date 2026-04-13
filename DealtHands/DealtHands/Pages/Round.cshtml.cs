@@ -29,7 +29,7 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // Hard stop — educators never play rounds
+            // Hard stop – educators never play rounds
             if (_authService.IsEducator)
             {
                 var code = _authService.SessionCode;
@@ -78,7 +78,7 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            // Player wasn't in the tracker when the round opened — assign them a card now
+            // Player wasn't in the tracker when the round opened – assign them a card now
             if (existingUgc == null)
             {
                 _sessionTracker.AddPlayer(gameSessionId, userId);
@@ -99,7 +99,7 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnPostSelectChoiceAsync(int chosenCardId, decimal submittedAmount)
         {
-            // Hard stop — educators never post choices
+            // Hard stop – educators never post choices
             if (_authService.IsEducator)
             {
                 var code = _authService.SessionCode;
@@ -182,7 +182,8 @@ namespace DealtHands.Pages
                     gameCompleted = true,
                     currentRoundClosed = false,
                     newRoundOpen = false,
-                    playerSubmitted = false
+                    playerSubmitted = false,
+                    openRoundId = (long?)null
                 });
             }
 
@@ -202,7 +203,8 @@ namespace DealtHands.Pages
                 gameCompleted = false,
                 currentRoundClosed = openRound == null, // No open round = current round closed
                 newRoundOpen = openRound != null,        // Open round exists = new round available
-                playerSubmitted = playerSubmitted
+                playerSubmitted = playerSubmitted,
+                openRoundId = openRound?.GameRoundId     // Return the specific round ID for precise tracking
             });
         }
     }

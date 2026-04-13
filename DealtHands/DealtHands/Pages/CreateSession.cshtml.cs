@@ -45,8 +45,8 @@ namespace DealtHands.Pages
                 return RedirectToPage("/Login");
 
             // Map game mode selection to the corresponding Game row
-            // GameId 1 = RandomAssigned, GameId 2 = ChooseFromFour
-            long gameId = GameMode == "ChooseFromFour" ? 2 : 1;
+            // GameId 1 = RandomAssigned, GameId 2 = Structured
+            long gameId = GameMode == "Structured" ? 2 : 1;
 
             var session = await _gameSessionService.CreateSessionAsync(
                 _authService.UserId.Value,

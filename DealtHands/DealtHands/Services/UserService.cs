@@ -28,7 +28,10 @@ namespace DealtHands.Services
         /// <returns>The created User object, or null if username/email already exists</returns>
         public async Task<User?> RegisterEducatorAsync(string username, string email, string password)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == username || u.Email == email))
+            // Case-insensitive check for existing username or email
+            if (await _context.Users.AnyAsync(u =>
+                u.Username.ToLower() == username.ToLower() ||
+                u.Email.ToLower() == email.ToLower()))
                 return null;
 
             var user = new User
@@ -53,8 +56,9 @@ namespace DealtHands.Services
         /// <returns>User object if authentication successful, null otherwise</returns>
         public async Task<User?> AuthenticateEducatorAsync(string email, string password)
         {
+            // Case-insensitive email lookup
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
 
             if (user == null || user.PasswordHash == null)
                 return null;
@@ -148,9 +152,13 @@ namespace DealtHands.Services
         /// <returns>The reset token, or null if email not found</returns>
         public async Task<string?> GeneratePasswordResetTokenAsync(string email)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            // Case-insensitive email lookup
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+
             if (user == null) return null;
 
+            // Generate a secure random token
             string token = Guid.NewGuid().ToString();
             user.PasswordResetToken = token;
             user.PasswordResetExpires = DateTime.UtcNow.AddHours(1);
@@ -165,12 +173,14 @@ namespace DealtHands.Services
         /// <returns>True if the reset succeeded, false if token is invalid or expired</returns>
         public async Task<bool> ResetPasswordWithTokenAsync(string token, string newPassword)
         {
+            // Find user with matching token that hasn't expired
             var user = await _context.Users.FirstOrDefaultAsync(u =>
                 u.PasswordResetToken == token &&
                 u.PasswordResetExpires > DateTime.UtcNow);
 
             if (user == null) return false;
 
+            // Update password and clear reset token
             user.PasswordHash = HashPassword(newPassword);
             user.PasswordResetToken = null;
             user.PasswordResetExpires = null;
