@@ -771,7 +771,7 @@ namespace DealtHands.Migrations
                     b.HasOne("DealtHands.ModelsV2.GameRound", "GameRound")
                         .WithMany("Ugcs")
                         .HasForeignKey("GameRoundId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_ugc_round");
 
@@ -779,7 +779,8 @@ namespace DealtHands.Migrations
                         .WithMany("Ugcs")
                         .HasForeignKey("GameSessionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_UGC_GameSession_GameSessionId");
 
                     b.HasOne("DealtHands.ModelsV2.User", "User")
                         .WithMany("Ugcs")

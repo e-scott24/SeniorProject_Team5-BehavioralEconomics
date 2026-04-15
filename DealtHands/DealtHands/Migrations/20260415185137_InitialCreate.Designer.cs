@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DealtHands.Migrations
 {
     [DbContext(typeof(DealtHandsDbv2Context))]
-    [Migration("20260408200759_GameChanger_Modifications")]
-    partial class GameChanger_Modifications
+    [Migration("20260415185137_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -130,6 +130,41 @@ namespace DealtHands.Migrations
                     b.HasIndex(new[] { "RoundType" }, "idx_card_roundtype");
 
                     b.ToTable("Card", (string)null);
+                });
+
+            modelBuilder.Entity("DealtHands.ModelsV2.CardLifeSituation", b =>
+                {
+                    b.Property<int>("CardLifeSituationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CardLifeSituationId"));
+
+                    b.Property<int>("CardId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LifeSituationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelationType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("CardLifeSituationId")
+                        .HasName("PK_CardLifeSituation");
+
+                    b.HasIndex(new[] { "CardId", "LifeSituationId", "RelationType" }, "UQ_CardLifeSituation")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "CardId" }, "idx_cardlifesituation_card");
+
+                    b.HasIndex(new[] { "LifeSituationId" }, "idx_cardlifesituation_lifesituation");
+
+                    b.HasIndex(new[] { "RelationType" }, "idx_cardlifesituation_relation");
+
+                    b.ToTable("CardLifeSituation", (string)null);
                 });
 
             modelBuilder.Entity("DealtHands.ModelsV2.Game", b =>
@@ -287,6 +322,41 @@ namespace DealtHands.Migrations
                     b.ToTable("GameChanger", (string)null);
                 });
 
+            modelBuilder.Entity("DealtHands.ModelsV2.GameChangerLifeSituation", b =>
+                {
+                    b.Property<int>("GameChangerLifeSituationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GameChangerLifeSituationId"));
+
+                    b.Property<int>("GameChangerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LifeSituationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelationType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("GameChangerLifeSituationId")
+                        .HasName("PK_GameChangerLifeSituation");
+
+                    b.HasIndex(new[] { "GameChangerId", "LifeSituationId", "RelationType" }, "UQ_GameChangerLifeSituation")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "GameChangerId" }, "idx_gamechangerlifesituation_gamechanger");
+
+                    b.HasIndex(new[] { "LifeSituationId" }, "idx_gamechangerlifesituation_lifesituation");
+
+                    b.HasIndex(new[] { "RelationType" }, "idx_gamechangerlifesituation_relation");
+
+                    b.ToTable("GameChangerLifeSituation", (string)null);
+                });
+
             modelBuilder.Entity("DealtHands.ModelsV2.GameRound", b =>
                 {
                     b.Property<long>("GameRoundId")
@@ -415,6 +485,39 @@ namespace DealtHands.Migrations
                     b.HasIndex(new[] { "Status" }, "idx_gamesession_status");
 
                     b.ToTable("GameSession", (string)null);
+                });
+
+            modelBuilder.Entity("DealtHands.ModelsV2.LifeSituation", b =>
+                {
+                    b.Property<int>("LifeSituationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LifeSituationId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("LifeSituationId")
+                        .HasName("PK_LifeSituation");
+
+                    b.HasIndex(new[] { "Name" }, "UQ_LifeSituation_Name")
+                        .IsUnique();
+
+                    b.ToTable("LifeSituation", (string)null);
                 });
 
             modelBuilder.Entity("DealtHands.ModelsV2.Ugc", b =>
@@ -585,6 +688,46 @@ namespace DealtHands.Migrations
                     b.ToTable("User", (string)null);
                 });
 
+            modelBuilder.Entity("DealtHands.ModelsV2.CardLifeSituation", b =>
+                {
+                    b.HasOne("DealtHands.ModelsV2.Card", "Card")
+                        .WithMany("CardLifeSituations")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_CardLifeSituation_Card");
+
+                    b.HasOne("DealtHands.ModelsV2.LifeSituation", "LifeSituation")
+                        .WithMany("CardLifeSituations")
+                        .HasForeignKey("LifeSituationId")
+                        .IsRequired()
+                        .HasConstraintName("FK_CardLifeSituation_LifeSituation");
+
+                    b.Navigation("Card");
+
+                    b.Navigation("LifeSituation");
+                });
+
+            modelBuilder.Entity("DealtHands.ModelsV2.GameChangerLifeSituation", b =>
+                {
+                    b.HasOne("DealtHands.ModelsV2.GameChanger", "GameChanger")
+                        .WithMany("GameChangerLifeSituations")
+                        .HasForeignKey("GameChangerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_GameChangerLifeSituation_GameChanger");
+
+                    b.HasOne("DealtHands.ModelsV2.LifeSituation", "LifeSituation")
+                        .WithMany("GameChangerLifeSituations")
+                        .HasForeignKey("LifeSituationId")
+                        .IsRequired()
+                        .HasConstraintName("FK_GameChangerLifeSituation_LifeSituation");
+
+                    b.Navigation("GameChanger");
+
+                    b.Navigation("LifeSituation");
+                });
+
             modelBuilder.Entity("DealtHands.ModelsV2.GameRound", b =>
                 {
                     b.HasOne("DealtHands.ModelsV2.GameSession", "GameSession")
@@ -631,7 +774,7 @@ namespace DealtHands.Migrations
                     b.HasOne("DealtHands.ModelsV2.GameRound", "GameRound")
                         .WithMany("Ugcs")
                         .HasForeignKey("GameRoundId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_ugc_round");
 
@@ -639,7 +782,8 @@ namespace DealtHands.Migrations
                         .WithMany("Ugcs")
                         .HasForeignKey("GameSessionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_UGC_GameSession_GameSessionId");
 
                     b.HasOne("DealtHands.ModelsV2.User", "User")
                         .WithMany("Ugcs")
@@ -660,6 +804,8 @@ namespace DealtHands.Migrations
 
             modelBuilder.Entity("DealtHands.ModelsV2.Card", b =>
                 {
+                    b.Navigation("CardLifeSituations");
+
                     b.Navigation("Ugcs");
                 });
 
@@ -670,6 +816,8 @@ namespace DealtHands.Migrations
 
             modelBuilder.Entity("DealtHands.ModelsV2.GameChanger", b =>
                 {
+                    b.Navigation("GameChangerLifeSituations");
+
                     b.Navigation("Ugcs");
                 });
 
@@ -683,6 +831,13 @@ namespace DealtHands.Migrations
                     b.Navigation("GameRounds");
 
                     b.Navigation("Ugcs");
+                });
+
+            modelBuilder.Entity("DealtHands.ModelsV2.LifeSituation", b =>
+                {
+                    b.Navigation("CardLifeSituations");
+
+                    b.Navigation("GameChangerLifeSituations");
                 });
 
             modelBuilder.Entity("DealtHands.ModelsV2.User", b =>
