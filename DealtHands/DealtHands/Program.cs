@@ -18,6 +18,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<GameSessionService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>(); // Add authentication service
 builder.Services.AddSingleton<SessionTracker>(); // Must be singleton
+builder.Services.AddSignalR();
 
 // V2 database context
 builder.Services.AddDbContext<DealtHandsDbv2Context>(options =>
@@ -51,5 +52,6 @@ app.MapStaticAssets();
 app.MapControllers();
 app.MapRazorPages()
    .WithStaticAssets();
+app.MapHub<DealtHands.SignalR_Hub.RefreshHub>("/refreshHub");
 
 app.Run();

@@ -201,5 +201,70 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script src="~/js/signalr-client.js"></script>
     <script src="~/js/lobby.js"></script>
+    <script>
+        // Get values from hidden inputs
+        const gameSessionId = '@Model.Session?.GameSessionId';
+        const sessionCode = '@Model.SessionCode';
+        const isEducator = '@Model.IsEducator.ToString().ToLower()' === 'true';
+
+        // Initialize global SignalR instance
+        const gameSignalR = new GameSignalRClient();
+
+        // Initialize SignalR connection and polling when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await gameSignalR.connect();
+                await gameSignalR.joinSession(gameSessionId);
+
+                // Listen for player updates
+                gameSignalR.on("playersUpdated", async () => {
+                    await updatePlayers();
+                });
+
+                // Listen for round changes
+                gameSignalR.on("roundChanged", (data) => {
+                    if (isEducator) {
+                        updateRoundStatus();
+                    } else {
+                        checkSessionStatus();
+                    }
+                });
+
+                // Listen for game completion
+                gameSignalR.on("gameCompleted", () => {
+                    window.location.href = '/Results';
+                });
+
+                // Initial load
+                await updatePlayers();
+
+                // Set up polling intervals based on role
+                if (isEducator) {
+                    // Educators poll round status every 2 seconds
+                    await updateRoundStatus();
+                    setInterval(updateRoundStatus, 2000);
+                } else {
+                    // Students check session status every 3 seconds
+                    await checkSessionStatus();
+                    setInterval(checkSessionStatus, 3000);
+                }
+
+            } catch (error) {
+                console.error('Failed to initialize lobby:', error);
+            }
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', async () => {
+            try {
+                await gameSignalR.leaveSession(gameSessionId);
+                await gameSignalR.disconnect();
+            } catch (error) {
+                console.warn('Error during cleanup:', error);
+            }
+        });
+    </script>
 }

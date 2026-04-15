@@ -8,6 +8,8 @@ async function updateRoundStatus() {
 
     try {
         const response = await fetch(`/Lobby?handler=RoundStatus&sessionCode=${sessionCode}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         const status = await response.json();
 
         const roundLabel = document.getElementById('roundLabel');
@@ -49,6 +51,8 @@ async function updateRoundStatus() {
 async function updatePlayers() {
     try {
         const response = await fetch(`/Lobby?handler=GetPlayers&sessionCode=${sessionCode}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         const players = await response.json();
 
         const countEl = document.getElementById('playerCount');
@@ -80,29 +84,23 @@ async function checkSessionStatus() {
     if (isEducator) return; // Educators never get redirected from this page
 
     try {
-        const startedRes = await fetch(`/Lobby?handler=CheckGameStarted&sessionCode=${sessionCode}`);
-        const started = await startedRes.json();
+        const response = await fetch(`/Lobby?handler=CheckSessionStatus&sessionCode=${sessionCode}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const status = await response.json();
 
-        if (started) {
-            window.location.href = '/Round';
-            return;
+        // If game is in progress, redirect to game page
+        if (status.status === 'InProgress') {
+            window.location.href = '/Game';
         }
-
-        const statusRes = await fetch(`/Lobby?handler=CheckSessionStatus&sessionCode=${sessionCode}`);
-        const { status, isActive } = await statusRes.json();
-
-        if (!isActive || status === 'Completed') {
-            alert('This session has been cancelled by the educator.');
-            window.location.href = '/';
-            return;
+        // If game ended, redirect to results
+        else if (status.status === 'Completed') {
+            window.location.href = '/Results';
         }
-
-        if (status === 'Paused') {
-            alert('The session has been paused. Use your Player Code to rejoin when it resumes.');
-            window.location.href = '/JoinSession';
-            return;
+        // If session was cancelled, redirect to join page
+        else if (status.status === 'Cancelled') {
+            window.location.href = '/JoinSession?message=Session was cancelled by educator';
         }
-
     } catch (err) {
         console.error('Error checking session status:', err);
     }

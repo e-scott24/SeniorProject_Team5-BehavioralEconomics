@@ -196,19 +196,11 @@ namespace DealtHands.Pages
             {
                 var user = await _userService.GetUserByIdAsync(pid);
                 if (user != null)
-                    players.Add(new { Name = user.Username, Id = user.UserId });
+                    players.Add(new { name = user.Username, id = user.UserId });
             }
             return new JsonResult(players);
         }
 
-        // Students poll this to know when to redirect to /Round
-        public async Task<JsonResult> OnGetCheckGameStartedAsync(string sessionCode)
-        {
-            var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
-            return new JsonResult(session?.Status == "InProgress");
-        }
-
-        // Students poll this to detect pause or cancellation
         public async Task<JsonResult> OnGetCheckSessionStatusAsync(string sessionCode)
         {
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
@@ -219,7 +211,6 @@ namespace DealtHands.Pages
             });
         }
 
-        // Educator control panel polls this
         public async Task<JsonResult> OnGetRoundStatusAsync(string sessionCode)
         {
             var session = await _gameSessionService.GetSessionByJoinCodeAsync(sessionCode);
@@ -229,7 +220,6 @@ namespace DealtHands.Pages
             if (round == null)
                 return new JsonResult(new { roundOpen = false });
 
-            // CardId != null identifies RoundCard UGC rows — GameChanger rows have CardId = null
             var totalAssigned = await _context.Ugcs
                 .CountAsync(u => u.GameRoundId == round.GameRoundId && u.CardId != null);
 
