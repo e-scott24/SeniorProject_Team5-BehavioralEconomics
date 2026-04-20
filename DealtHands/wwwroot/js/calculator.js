@@ -1,6 +1,6 @@
 ﻿/*  Name: Jason Black
     Date: 2/23/2026
-    Last Update: 3/16/2026
+    Last Update: 4/19/2026
 
     Dave Ramsey budget calculator logic.
     Handles field generation, live calculations, donut chart, and validation.
@@ -21,10 +21,10 @@
     ...\DealtHands\DealtHands\Program.cs
 
 
-    Difficulty levels:
+Difficulty levels:
     Easy:   Take-Home Pay / Student Loans, Car, House, Family, Food, Consumer Debt, Entertainment, Other/Misc, Savings
-    Medium: TBD — define MEDIUM_INCOME and MEDIUM_EXPENSES below when ready
-    Hard:   TBD — define HARD_INCOME and HARD_EXPENSES below when ready
+    Medium: Easy + Side Income / Car Insurance, Utilities, Healthcare
+    Hard:   Medium + Investment Income / Home Insurance, Childcare, Health Insurance, Life Insurance, Retirement
 
     Income/Expenses information:
     hint = smaller text under the label for extra guidance
@@ -127,10 +127,298 @@
         },
     ];
 
-    const MEDIUM_INCOME = [];
-    const MEDIUM_EXPENSES = [];
-    const HARD_INCOME = [];
-    const HARD_EXPENSES = [];
+    const MEDIUM_INCOME = [
+        {
+            key: "income",
+            label: "Take-Home Pay (after taxes)",
+            hint: "Your actual deposited amount each month",
+        },
+        {
+            key: "sideincome",
+            label: "Side Income",
+            hint: "Freelance, part-time gigs, tips",
+        },
+    ];
+
+    const MEDIUM_EXPENSES = [
+        {
+            key: "studentloans",
+            label: "Student Loans",
+            color: "#6c63ff",
+            pctLabel: "5–10%",
+            hint: "Federal and private loan monthly payments",
+            tip: "Federal and private student loan payments only. Focus on paying it off aggressively once your starter emergency fund is in place.",
+            warnPct: 0.10
+        },
+        {
+            key: "car",
+            label: "Car",
+            color: "#4cc9f0",
+            pctLabel: "10–15%",
+            hint: "Payment, fuel, and maintenance",
+            tip: "Car payment, fuel, and maintenance. Transportation should stay reasonable so it doesn't dominate your budget.",
+            warnPct: 0.15
+        },
+        {
+            key: "carinsurance",
+            label: "Car Insurance",
+            color: "#3fa9cf",
+            pctLabel: "2–4%",
+            hint: "Monthly auto insurance premium",
+            tip: "Required if you own a car. Rates go up for younger drivers, so budgeting for this early helps.",
+            warnPct: 0.05
+        },
+        {
+            key: "house",
+            label: "House",
+            color: "#3a86ff",
+            pctLabel: "25–35%",
+            hint: "Monthly rent or mortgage payment",
+            tip: "Housing is usually the largest expense, so keeping it within a healthy range protects the rest of your budget.",
+            warnPct: 0.35
+        },
+        {
+            key: "utilities",
+            label: "Utilities",
+            color: "#5fb6c4",
+            pctLabel: "4–7%",
+            hint: "Electric, water, gas, internet, phone",
+            tip: "Combined utilities for your home. Easy to forget but they add up quickly.",
+            warnPct: 0.08
+        },
+        {
+            key: "family",
+            label: "Family",
+            color: "#ff9f1c",
+            pctLabel: "5–10%",
+            hint: "Pets, relatives, household items",
+            tip: "Family expenses can be unpredictable, so planning for them helps prevent surprises.",
+        },
+        {
+            key: "food",
+            label: "Food",
+            color: "#e9c46a",
+            pctLabel: "10–15%",
+            hint: "Groceries and dining out combined",
+            tip: "Cooking at home and planning meals can dramatically reduce spending.",
+            min: 200
+        },
+        {
+            key: "healthcare",
+            label: "Healthcare",
+            color: "#f08080",
+            pctLabel: "3–6%",
+            hint: "Co-pays, prescriptions, premiums",
+            tip: "Out-of-pocket medical costs even with insurance. Regular check-ups prevent bigger bills later.",
+            warnPct: 0.08
+        },
+        {
+            key: "debt",
+            label: "Consumer Debt",
+            color: "#e63946",
+            pctLabel: "0–10%",
+            hint: "Credit cards, medical bills, personal loans",
+            tip: "Credit cards, medical bills, personal loans, and buy-now-pay-later balances.",
+            warnPct: 0.15
+        },
+        {
+            key: "entertainment",
+            label: "Entertainment",
+            color: "#e76f51",
+            pctLabel: "0–5%",
+            hint: "Streaming, hobbies, fun spending",
+            tip: "Keeps life enjoyable, but should stay small.",
+            warnPct: 0.05
+        },
+        {
+            key: "other",
+            label: "Other / Misc",
+            color: "#8ab4c4",
+            pctLabel: "5–10%",
+            hint: "Everything that doesn't fit elsewhere",
+            tip: "Personal care and everything else. Catches expenses that don't fit anywhere else.",
+            warnPct: 0.10
+        },
+        {
+            key: "savings",
+            label: "Savings",
+            color: "#2a9d8f",
+            pctLabel: "10–15%",
+            hint: "Emergency fund and long-term savings",
+            tip: "Build a starter emergency fund first, then grow long-term savings and retirement."
+        },
+    ];
+
+    const HARD_INCOME = [
+        {
+            key: "income",
+            label: "Take-Home Pay (after taxes)",
+            hint: "Your actual deposited amount each month",
+        },
+        {
+            key: "sideincome",
+            label: "Side Income",
+            hint: "Freelance, part-time gigs, tips",
+        },
+        {
+            key: "investmentincome",
+            label: "Investment Income",
+            hint: "Dividends, interest, rental income",
+        },
+    ];
+
+    const HARD_EXPENSES = [
+        {
+            key: "studentloans",
+            label: "Student Loans",
+            color: "#6c63ff",
+            pctLabel: "5–10%",
+            hint: "Federal and private loan monthly payments",
+            tip: "Federal and private student loan payments only. Focus on paying it off aggressively once your starter emergency fund is in place.",
+            warnPct: 0.10
+        },
+        {
+            key: "car",
+            label: "Car",
+            color: "#4cc9f0",
+            pctLabel: "10–15%",
+            hint: "Payment, fuel, and maintenance",
+            tip: "Car payment, fuel, and maintenance combined. Transportation should stay reasonable so it doesn't dominate your budget.",
+            warnPct: 0.15
+        },
+        {
+            key: "carinsurance",
+            label: "Car Insurance",
+            color: "#3fa9cf",
+            pctLabel: "2–4%",
+            hint: "Monthly auto insurance premium",
+            tip: "Required if you own a car. Rates go up for younger drivers, so budgeting for this early helps.",
+            warnPct: 0.05
+        },
+        {
+            key: "house",
+            label: "House",
+            color: "#3a86ff",
+            pctLabel: "25–35%",
+            hint: "Monthly rent or mortgage payment",
+            tip: "Housing is usually the largest expense. Keeping it within a healthy range protects the rest of your budget.",
+            warnPct: 0.35
+        },
+        {
+            key: "homeinsurance",
+            label: "Home Insurance",
+            color: "#5a96d4",
+            pctLabel: "1–3%",
+            hint: "Homeowners or renters insurance",
+            tip: "Protects against fire, theft, and major damage. Usually required if you have a mortgage.",
+            warnPct: 0.04
+        },
+        {
+            key: "utilities",
+            label: "Utilities",
+            color: "#5fb6c4",
+            pctLabel: "4–7%",
+            hint: "Electric, water, gas, internet, phone",
+            tip: "Combined utilities for your home. Easy to forget but they add up quickly.",
+            warnPct: 0.08
+        },
+        {
+            key: "family",
+            label: "Family",
+            color: "#ff9f1c",
+            pctLabel: "5–10%",
+            hint: "Pets, relatives, household items",
+            tip: "Family expenses can be unpredictable, so planning for them helps prevent surprises.",
+        },
+        {
+            key: "childcare",
+            label: "Childcare",
+            color: "#ffb547",
+            pctLabel: "5–15%",
+            hint: "Daycare, after-school care, babysitting",
+            tip: "One of the largest expenses for parents of young children. Plan well in advance if you're starting a family.",
+            warnPct: 0.15
+        },
+        {
+            key: "food",
+            label: "Food",
+            color: "#e9c46a",
+            pctLabel: "10–15%",
+            hint: "Groceries and dining out combined",
+            tip: "Cooking at home and planning meals can dramatically reduce spending.",
+            min: 200
+        },
+        {
+            key: "healthcare",
+            label: "Healthcare",
+            color: "#f08080",
+            pctLabel: "3–6%",
+            hint: "Co-pays, prescriptions, premiums",
+            tip: "Out-of-pocket medical costs even with insurance.",
+            warnPct: 0.08
+        },
+        {
+            key: "healthinsurance",
+            label: "Health Insurance",
+            color: "#f4978e",
+            pctLabel: "3–8%",
+            hint: "Monthly premium (if not deducted from pay)",
+            tip: "If your employer doesn't cover it, health insurance can cost hundreds per month. Never skip it.",
+            warnPct: 0.10
+        },
+        {
+            key: "lifeinsurance",
+            label: "Life Insurance",
+            color: "#c9a0dc",
+            pctLabel: "0–2%",
+            hint: "Term life premium (if you have dependents)",
+            tip: "Term life insurance is inexpensive when you're young. Essential if anyone depends on your income.",
+            warnPct: 0.03
+        },
+        {
+            key: "debt",
+            label: "Consumer Debt",
+            color: "#e63946",
+            pctLabel: "0–10%",
+            hint: "Credit cards, medical bills, personal loans",
+            tip: "All consumer debt payments combined. Attack high-interest debt aggressively.",
+            warnPct: 0.15
+        },
+        {
+            key: "entertainment",
+            label: "Entertainment",
+            color: "#e76f51",
+            pctLabel: "0–5%",
+            hint: "Streaming, hobbies, fun spending",
+            tip: "Keeps life enjoyable, but should stay small.",
+            warnPct: 0.05
+        },
+        {
+            key: "other",
+            label: "Other / Misc",
+            color: "#8ab4c4",
+            pctLabel: "5–10%",
+            hint: "Everything that doesn't fit elsewhere",
+            tip: "Personal care, clothing, subscriptions, and everything else. Catches expenses that don't fit anywhere else.",
+            warnPct: 0.10
+        },
+        {
+            key: "savings",
+            label: "Savings",
+            color: "#2a9d8f",
+            pctLabel: "10–15%",
+            hint: "Emergency fund and short-term savings",
+            tip: "Build a starter emergency fund first, then grow toward 3–6 months of expenses."
+        },
+        {
+            key: "retirement",
+            label: "Retirement",
+            color: "#1e7e68",
+            pctLabel: "10–15%",
+            hint: "401(k), IRA, Roth contributions",
+            tip: "Starting retirement contributions early is the single biggest wealth-building advantage you have. Match any employer 401(k) contribution first."
+        },
+    ];
 
     let activeIncome = EASY_INCOME;
     let activeExpenses = EASY_EXPENSES;
@@ -423,8 +711,6 @@
             });
     }
 
-    // Load on page load
-    loadFinancials();
 
     // Expose reload function globally
     window.reloadCalculatorData = loadFinancials;

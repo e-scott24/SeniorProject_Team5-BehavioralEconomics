@@ -2,50 +2,54 @@ using DealtHands.Data;
 using DealtHands.Services;
 using Microsoft.EntityFrameworkCore;
 
+// This is the Program.cs file
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
+
+// Register HTTP Context Accessor (required for AuthenticationService)
+builder.Services.AddHttpContextAccessor();
 
 // Register services
-builder.Services.AddScoped<SessionService>();
-builder.Services.AddScoped<PlayerService>();
-builder.Services.AddScoped<GameEngine>();
 builder.Services.AddScoped<FinancialCalculator>();
-builder.Services.AddScoped<GameChangerService>();
-//builder.Services.AddScoped<AIPricingService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<GameSessionService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>(); // Add authentication service
+builder.Services.AddSingleton<SessionTracker>(); // Must be singleton
 
-// Add database context
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// V2 database context
+builder.Services.AddDbContext<DealtHandsDbv2Context>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DealtHandsDBV2")));
 
-
-//for calculator
-builder.Services.AddControllers();
+// Session configuration
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession();
-
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(2);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // For localhost development
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.Name = ".DealtHands.Session"; // Give session cookie a specific name
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
-app.UseSession(); // calculator
-
+app.UseSession(); // Must be after UseRouting and before UseAuthorization
 app.UseAuthorization();
-
 app.MapStaticAssets();
+app.MapControllers();
 app.MapRazorPages()
    .WithStaticAssets();
 
-app.MapControllers(); // calculator
 app.Run();

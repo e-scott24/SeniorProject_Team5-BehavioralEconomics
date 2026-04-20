@@ -1,71 +1,205 @@
 ﻿@page
-@using DealtHands.Models
 @model DealtHands.Pages.LobbyModel
 @{
-	ViewData["Title"] = "Lobby";
+    ViewData["Title"] = "Lobby";
 }
+
+@* For debugging
+@if (TempData["Debug"] != null)
+{
+    <div class="alert alert-info">
+        DEBUG: @TempData["Debug"]
+    </div>
+}
+*@
+
 <div class="container mt-4">
-	<input type="hidden" id="sessionCode" value="@Model.SessionCode" />
-	<div class="card shadow">
-		<div class="card-header bg-primary text-white">
-			<div class="row">
-				<div class="col-md-8">
-					<h3 class="mb-0">Session Code: @Model.SessionCode</h3>
-					<p class="mb-0">@Model.Session?.Name</p>
-				</div>
-				<div class="col-md-4 text-end">
-					<span class="badge bg-light text-dark fs-6">@Model.GameMode</span>
-					<span class="badge bg-warning text-dark fs-6">@Model.Difficulty</span>
-				</div>
-			</div>
-		</div>
-		<div class="card-body">
-			<h4>Waiting for game to start...</h4>
-			<p class="text-muted">Players joined: <span id="playerCount">@Model.Players?.Count</span> / @Model.Session?.MaxPlayers</p>
-			<hr class="my-4">
-			<h5 class="mb-3">Players in Lobby:</h5>
+    <input type="hidden" id="sessionCode" value="@Model.SessionCode" />
+    <input type="hidden" id="isEducator" value="@Model.IsEducator.ToString().ToLower()" />
+    <input type="hidden" id="sessionStatus" value="@Model.Session?.Status" />
 
-			<div class="row" id="playerContainer">
-				@foreach (var player in Model.Players ?? new List<Player>())
-				{
-					<div class="col-md-2 mb-3">
-						<div class="card">
-							<div class="card-body text-center py-2">
-								<p class="mb-0 fw-bold">@player.Name</p>
-							</div>
-						</div>
-					</div>
-				}
-			</div>
-		</div>
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="row">
+                <div class="col-md-8">
+                    <h3 class="mb-0">Session Code: @Model.SessionCode</h3>
+                    <p class="mb-0">@Model.Session?.Name</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-light text-dark fs-6">@Model.Session?.Game?.Mode</span>
+                    <span class="badge bg-warning text-dark fs-6">@Model.Session?.Difficulty</span>
+                </div>
+            </div>
+        </div>
 
-		@if (Model.IsEducator)
-		{
-			<div class="alert alert-info mt-4">
-				<strong>Instructions:</strong> Share code <strong>@Model.SessionCode</strong> with students.
-				They can join at <code>/JoinSession</code>
-			</div>
+        <div class="card-body">
 
-			<!-- Wrapped in form, removed disabled -->
-			<form method="post">
-				<input type="hidden" name="sessionCode" value="@Model.SessionCode" />
-				<div class="d-grid gap-2 mt-4">
-					<button type="submit" class="btn btn-success btn-lg" asp-page-handler="StartGame">
-						Start Game
-					</button>
-					<button class="btn btn-outline-secondary" type="button">Cancel Session</button>
-				</div>
-			</form>
-		}
-		else
-		{
-			<div class="alert alert-success mt-4">
-				You've joined! Waiting for educator to start...
-			</div>
-		}
-	</div>
+            @* --- WAITING STATE (before game starts) --- *@
+            @if (Model.Session?.Status == "Waiting")
+            {
+                <h4>Waiting for game to start...</h4>
+                <p class="text-muted">
+                    Players joined: <span id="playerCount">@Model.Players?.Count</span> / @Model.Session?.Game?.MaxPlayers
+                </p>
+                <hr class="my-4">
+                <h5 class="mb-3">Players in Lobby:</h5>
+                <div class="row" id="playerContainer">
+                    @foreach (var player in Model.Players)
+                    {
+                        <div class="col-md-2 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center py-2">
+                                    <p class="mb-0 fw-bold">@player.Username</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.IsEducator)
+                {
+                    <form method="post">
+                        <input type="hidden" name="sessionCode" value="@Model.SessionCode" />
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg" asp-page-handler="StartGame">
+                                Start Game
+                            </button>
+                            <button type="submit" class="btn btn-outline-danger" asp-page-handler="CancelSession"
+                                    onclick="return confirm('Are you sure you want to cancel this session? All player data will be lost.');">
+                                Cancel Session
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    @if (Model.Player != null)
+                    {
+                        <div class="alert alert-warning mt-3">
+                            <h5 class="mb-0">Your Player Code: <strong>@Model.Player.UserId</strong></h5>
+                            <small>Save this code! You'll need it to rejoin if disconnected.</small>
+                        </div>
+                    }
+                    <div class="alert alert-success mt-4">
+                        You've joined! Waiting for educator to start...
+                    </div>
+                }
+            }
+
+            @* --- PAUSED STATE --- *@
+            else if (Model.Session?.Status == "Paused")
+            {
+                <div class="alert alert-warning text-center">
+                    <h4>Session Paused</h4>
+                    <p class="mb-0">The educator has paused this session. Please wait.</p>
+                </div>
+
+                @if (Model.IsEducator)
+                {
+                    <div class="mt-4">
+                        <h5 class="mb-3">Players who have rejoined:</h5>
+                        <div class="row" id="playerContainer">
+                            @foreach (var player in Model.Players)
+                            {
+                                <div class="col-md-2 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center py-2">
+                                            <p class="mb-0 fw-bold">@player.Username</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <p class="text-muted">
+                            Players rejoined: <span id="playerCount">@Model.Players?.Count</span>
+                        </p>
+                        <form method="post">
+                            <input type="hidden" name="sessionCode" value="@Model.SessionCode" />
+                            <div class="d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-success btn-lg" asp-page-handler="ResumeSession">
+                                    Resume Session
+                                </button>
+                                <button type="submit" class="btn btn-outline-danger" asp-page-handler="CancelSession"
+                                        onclick="return confirm('Are you sure you want to cancel this session?');">
+                                    Cancel Session
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-3">
+                        Waiting for the educator to resume the session...
+                    </div>
+                }
+            }
+
+            @* --- IN PROGRESS STATE --- *@
+            else if (Model.Session?.Status == "InProgress")
+            {
+                @if (Model.IsEducator)
+                {
+                    <h5 class="mb-3">Players in Session:</h5>
+                    <div class="row" id="playerContainer">
+                        @foreach (var player in Model.Players)
+                        {
+                            <div class="col-md-2 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center py-2">
+                                        <p class="mb-0 fw-bold">@player.Username</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <p class="text-muted">Players: <span id="playerCount">@Model.Players?.Count</span></p>
+
+                    @* Educator control panel *@
+                    <div class="card mt-4 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Educator Controls</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h4 id="roundLabel">Loading round info...</h4>
+                            <p id="submissionStatus" class="text-muted mb-3"></p>
+                            <div class="progress mb-3" style="height: 24px;">
+                                <div id="submissionProgress" class="progress-bar bg-success" role="progressbar"
+                                     style="width: 0%">
+                                    0%
+                                </div>
+                            </div>
+                            <form method="post">
+                                <input type="hidden" name="sessionCode" value="@Model.SessionCode" />
+                                <div class="d-grid gap-2">
+                                    <button type="submit" id="closeRoundBtn"
+                                            class="btn btn-warning btn-lg"
+                                            asp-page-handler="CloseRound"
+                                            disabled>
+                                        Close Round &amp; Open Next
+                                    </button>
+                                    <button type="submit" class="btn btn-outline-secondary"
+                                            asp-page-handler="PauseSession"
+                                            onclick="return confirm('Pause the session? Players will need to rejoin when you resume.');">
+                                        Pause Session
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        The game is in progress. Please wait for the educator.
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
 </div>
 
 @section Scripts {
-	<script src="~/js/lobby.js"></script>
+    <script src="~/js/lobby.js"></script>
 }

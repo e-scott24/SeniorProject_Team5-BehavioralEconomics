@@ -1,14 +1,10 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\jason\\source\\repos\\DealtHands\\",
+  "WorkspaceRootPath": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\users\\jason\\source\\repos\\dealthands\\dealthands\\services\\gamechangerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\services\\gamechangerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\users\\jason\\source\\repos\\dealthands\\dealthands\\models\\cards\\combocard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\models\\cards\\combocard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,11 +14,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 7,
           "Children": [
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
             },
             {
               "$type": "Bookmark",
@@ -37,28 +33,28 @@
               "Name": "ST:0:0:{74946827-37a0-11d2-a273-00c04f8ef4ff}"
             },
             {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "ComboCard.cs",
-              "DocumentMoniker": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Models\\Cards\\ComboCard.cs",
-              "RelativeDocumentMoniker": "DealtHands\\Models\\Cards\\ComboCard.cs",
-              "ToolTip": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Models\\Cards\\ComboCard.cs",
-              "RelativeToolTip": "DealtHands\\Models\\Cards\\ComboCard.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-23T20:15:40.094Z"
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "GameChangerService.cs",
-              "DocumentMoniker": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Services\\GameChangerService.cs",
-              "RelativeDocumentMoniker": "DealtHands\\Services\\GameChangerService.cs",
-              "ToolTip": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\Services\\GameChangerService.cs",
-              "RelativeToolTip": "DealtHands\\Services\\GameChangerService.cs",
-              "ViewState": "AgIAANEAAAAAAAAAAAAswOAAAAAAAAAAAAAAAA==",
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\Program.cs",
+              "RelativeDocumentMoniker": "DealtHands\\Program.cs",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\Program.cs",
+              "RelativeToolTip": "DealtHands\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-22T06:22:07.963Z",
+              "WhenOpened": "2026-04-20T20:50:39.937Z",
               "EditorCaption": ""
             }
           ]

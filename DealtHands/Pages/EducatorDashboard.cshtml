@@ -1,0 +1,95 @@
+@page
+@model DealtHands.Pages.EducatorDashboardModel
+@{
+    ViewData["Title"] = "Educator Dashboard";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Sessions</h2>
+        <div>
+            <span class="me-3">Welcome, @Model.EducatorName</span>
+            <a href="/Logout" class="btn btn-sm btn-outline-secondary">Logout</a>
+        </div>
+    </div>
+
+    <a href="/CreateSession" class="btn btn-primary mb-3">+ Create New Session</a>
+
+    <h4 class="mt-4">Active Sessions</h4>
+    @if (Model.ActiveSessions.Any())
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Mode</th>
+                    <th>Max Players</th>
+                    <th>Round</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in Model.ActiveSessions)
+                {
+                    <tr>
+                        <td>@session.Name</td>
+                        <td><strong>@session.JoinCode</strong></td>
+                        <td>@session.Game?.Mode</td>
+                        <td>@session.Game?.MaxPlayers</td>
+                        <td>@session.CurrentRoundNumber / 5</td>
+                        <td>@session.CreatedAt.ToShortDateString()</td>
+                        <td>
+                            <a href="/Lobby?sessionCode=@session.JoinCode" class="btn btn-sm btn-primary">Resume</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="text-muted">No active sessions. Create one to get started!</p>
+    }
+
+    <h4 class="mt-5">Completed Sessions</h4>
+    @if (Model.CompletedSessions.Any())
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Mode</th>
+                    <th>Completed</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in Model.CompletedSessions)
+                {
+                    <tr>
+                        <td>@session.Name</td>
+                        <td>@session.Game?.Mode</td>
+                        <td>@session.EndedAt?.ToShortDateString()</td>
+                        <td>
+                            <a href="/SessionReport?sessionId=@session.GameSessionId" class="btn btn-sm btn-success">View Report</a>
+                            <!-- "Soft delete" button (doesn't actually delete it from DB, just sets the active status to false)-->
+                            <form method="post" style="display:inline;" asp-page-handler="ArchiveSession">
+                                <input type="hidden" name="sessionId" value="@session.GameSessionId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Archive this session? It will be hidden from your dashboard.');">
+                                    Archive
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="text-muted">No completed sessions yet.</p>
+    }
+</div>

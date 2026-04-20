@@ -1,0 +1,48 @@
+﻿@page
+@model DealtHands.Pages.RegisterModel
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Logo -->
+            <div class="text-center mb-4">
+                <img src="~/images/DealtHandsLogo.png" alt="Dealt Hands" class="img-fluid mb-2" style="max-width: 250px;" />
+                <br>
+                <small class="text-muted">Powered by</small>
+                <img src="~/images/EnlightenmentLogo.png" alt="Enlightenment Consulting" class="img-fluid" style="max-width: 150px;" />
+            </div>
+
+            <div class="card">
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Educator Registration</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Full Name</label>
+                            <input asp-for="Name" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <input asp-for="Password" type="password" class="form-control" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@Model.ErrorMessage</div>
+                        }
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+                    <div class="mt-3 text-center">
+                        <a asp-page="/Login">Already have an account? Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

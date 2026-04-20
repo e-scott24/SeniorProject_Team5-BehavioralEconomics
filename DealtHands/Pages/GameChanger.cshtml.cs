@@ -1,22 +1,4 @@
-/*  Name: Jason Black
-    Date: 3/20/2026
-    Last Update: 3/21/2026
-
-    PageModel for GameChanger.cshtml.
-    Round 1 does not use this page — it handles cards inline via the overlay.
-    Available for standalone card sequences on other rounds if needed.
-
-    The correct file paths are the following:
-    ...\DealtHands\DealtHands\Services\GameChangerService.cs
-    ...\DealtHands\DealtHands\Services\GameEngine.cs
-    ...\DealtHands\DealtHands\Models\GameChangerEvent.cs
-    ...\DealtHands\DealtHands\Models\Cards\GameChangerCard.cs
-    ...\DealtHands\DealtHands\Pages\Shared\GameChangerOverlayModel.cs
-    ...\DealtHands\DealtHands\Pages\Shared\Cards\_GameChangerCard.cshtml
-    ...\DealtHands\DealtHands\Pages\Shared\Cards\_GameChangerOverlay.cshtml
-*/
-
-using DealtHands.Models.Cards;
+using DealtHands.ModelsV2;
 using DealtHands.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -25,63 +7,52 @@ namespace DealtHands.Pages
 {
     public class GameChangerModel : PageModel
     {
-        private readonly GameChangerService _gcService;
-        private readonly GameEngine _gameEngine;
-        private readonly PlayerService _playerService;
-        private readonly SessionService _sessionService;
+        private readonly GameSessionService _gameSessionService;
+        private readonly IAuthenticationService _authService;
 
-        public GameChangerModel(GameChangerService gcService, GameEngine gameEngine,
-                                 PlayerService playerService, SessionService sessionService)
+        public GameChangerModel(GameSessionService gameSessionService, IAuthenticationService authService)
         {
-            _gcService = gcService;
-            _gameEngine = gameEngine;
-            _playerService = playerService;
-            _sessionService = sessionService;
+            _gameSessionService = gameSessionService;
+            _authService = authService;
         }
 
-        public List<GameChangerCard> Cards { get; set; } = new();
-        public int PlayerId { get; set; }
-        public int Round { get; set; }
-        public int NextRound { get; set; }
+        public Ugc GameChangerUgc { get; set; }
+        public PlayerFinancialState? FinancialState { get; set; }
 
-        // Default to empty string — assigned in OnGet via GetRoundPage()
-        public string NextRoundPage { get; set; } = string.Empty;
-
-        public IActionResult OnGet(int playerId, int round, int nextRound)
+        public async Task<IActionResult>
+    OnGetAsync()
         {
-            var player = _playerService.GetPlayer(playerId);
-            if (player == null) return RedirectToPage("/Index");
+            // Hard stop — educators never receive game changers
+            if (_authService.IsEducator)
+            {
+                var code = _authService.SessionCode;
+                return !string.IsNullOrEmpty(code)
+                ? RedirectToPage("/Lobby", new { sessionCode = code })
+                : RedirectToPage("/EducatorDashboard");
+            }
 
-            var session = _sessionService.GetSessionById(player.SessionId);
-            var difficulty = session?.Difficulty ?? "Medium";
+            if (!_authService.UserId.HasValue)
+                return RedirectToPage("/JoinSession");
 
-            PlayerId = playerId;
-            Round = round;
-            NextRound = nextRound;
-            NextRoundPage = _gameEngine.GetRoundPage(nextRound);
-            Cards = _gcService.GetCardsForRound(round, difficulty);
+            if (!_authService.GameSessionId.HasValue)
+                return RedirectToPage("/JoinSession");
+
+            long userId = _authService.UserId.Value;
+            long gameSessionId = _authService.GameSessionId.Value;
+
+            var openRound = await _gameSessionService.GetOpenRoundAsync(gameSessionId);
+            if (openRound != null)
+                GameChangerUgc = await _gameSessionService.GetPlayerGameChangerAsync(userId, openRound.GameRoundId);
+
+            FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
 
             return Page();
         }
 
-        // POST — applies one card's effect when the player clicks Continue.
-        // Looks up by cardId 
-        public IActionResult OnPostApplyCard(int playerId, int cardId, int round, int nextRound)
+        // Player clicks Continue after viewing their game changer card
+        public IActionResult OnPostContinue()
         {
-            var player = _playerService.GetPlayer(playerId);
-            if (player == null) return new JsonResult(new { success = false });
-
-            var session = _sessionService.GetSessionById(player.SessionId);
-            var difficulty = session?.Difficulty ?? "Medium";
-
-            var cards = _gcService.GetCardsForRound(round, difficulty);
-            var card = cards.FirstOrDefault(c => c.Id == cardId);
-
-            if (card == null) return new JsonResult(new { success = false });
-
-            _gameEngine.ApplyGameChanger(playerId, card, round);
-
-            return new JsonResult(new { success = true });
+            return RedirectToPage("/Round");
         }
     }
 }

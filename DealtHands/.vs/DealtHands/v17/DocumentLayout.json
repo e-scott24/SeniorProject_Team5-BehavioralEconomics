@@ -1,0 +1,121 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\dealthands\\services\\gamesessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\services\\gamesessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\dealthands\\pages\\round.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\pages\\round.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\dealthands\\wwwroot\\js\\round.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\wwwroot\\js\\round.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\dealthands\\pages\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\pages\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|c:\\usi\\spring2026\\cs483-seniorproject\\seniorproject_team5-behavioraleconomics\\dealthands\\dealthands\\pages\\gamechanger.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{0F6A0F07-1FC5-4F83-AD40-39C1E171B567}|DealtHands\\DealtHands.csproj|solutionrelative:dealthands\\pages\\gamechanger.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{74946827-37a0-11d2-a273-00c04f8ef4ff}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameSessionService.cs",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Services\\GameSessionService.cs",
+              "RelativeDocumentMoniker": "DealtHands\\Services\\GameSessionService.cs",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Services\\GameSessionService.cs",
+              "RelativeToolTip": "DealtHands\\Services\\GameSessionService.cs",
+              "ViewState": "AgIAAJcAAAAAAAAAAADgv7sAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-20T18:26:21.663Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Round.cshtml",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\Round.cshtml",
+              "RelativeDocumentMoniker": "DealtHands\\Pages\\Round.cshtml",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\Round.cshtml",
+              "RelativeToolTip": "DealtHands\\Pages\\Round.cshtml",
+              "ViewState": "AgIAAM0DAAAAAAAAAAAEwBYAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-20T18:59:42.128Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "DealtHands\\Pages\\Shared\\_Layout.cshtml",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "DealtHands\\Pages\\Shared\\_Layout.cshtml",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-20T18:55:43.283Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "round.js",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\wwwroot\\js\\round.js",
+              "RelativeDocumentMoniker": "DealtHands\\wwwroot\\js\\round.js",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\wwwroot\\js\\round.js",
+              "RelativeToolTip": "DealtHands\\wwwroot\\js\\round.js",
+              "ViewState": "AgIAADQAAAAAAAAAAAAIwAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-04-20T18:55:31.32Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "GameChanger.cshtml",
+              "DocumentMoniker": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\GameChanger.cshtml",
+              "RelativeDocumentMoniker": "DealtHands\\Pages\\GameChanger.cshtml",
+              "ToolTip": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands\\Pages\\GameChanger.cshtml",
+              "RelativeToolTip": "DealtHands\\Pages\\GameChanger.cshtml",
+              "ViewState": "AgIAALIAAAAAAAAAAAApwCMBAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-20T18:40:47.934Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

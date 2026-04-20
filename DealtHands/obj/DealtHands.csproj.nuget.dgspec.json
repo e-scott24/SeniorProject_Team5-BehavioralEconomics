@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\DealtHands.csproj": {}
+    "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands.csproj": {}
   },
   "projects": {
-    "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\DealtHands.csproj": {
+    "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\DealtHands.csproj",
+        "projectUniqueName": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands.csproj",
         "projectName": "DealtHands",
-        "projectPath": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\DealtHands.csproj",
+        "projectPath": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\DealtHands.csproj",
         "packagesPath": "C:\\Users\\jason\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\jason\\source\\repos\\DealtHands\\DealtHands\\obj\\",
+        "outputPath": "C:\\USI\\Spring2026\\CS483-SeniorProject\\SeniorProject_Team5-BehavioralEconomics\\DealtHands\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -50,6 +50,10 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.1.0, )"
+            },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
               "version": "[9.0.14, )"

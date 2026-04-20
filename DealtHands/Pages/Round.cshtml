@@ -1,30 +1,1001 @@
 ﻿@page
 @model DealtHands.Pages.RoundModel
 @{
-    ViewData["Title"] = Model.Round?.RoundName ?? "Round";
+    ViewData["Title"] = Model.CurrentRound?.RoundType ?? "Round";
+    var currentRoundNum = Model.CurrentRound?.RoundNumber ?? 0;
 }
 
-<h2>@Model.Round?.RoundName</h2>
+<style>
+    :root {
+        --rd-navy: #1e3a5f;
+        --rd-ink: #1e293b;
+        --rd-blue: #2563eb;
+        --rd-blue-dark: #1d4ed8;
+        --rd-border: #e2e8f0;
+        --rd-cream: #f8fafc;
+        --rd-green: #16a34a;
+        --rd-green-soft: #dcfce7;
+        --rd-yellow: #d97706;
+        --rd-yellow-soft: #fef3c7;
+        --rd-red: #dc2626;
+        --rd-red-soft: #fee2e2;
+        --rd-blue-soft: #eff6ff;
+    }
 
-@if (TempData["WaitingMessage"] != null)
-{
-    <p>@TempData["WaitingMessage"]</p>
-}
-else
-{
-    <form method="post">
-        <select name="choiceDescription" required>
-            @foreach (var c in Model.Round.Choices)
-            {
-                <option value="@c">@c</option>
-            }
-        </select>
+    * {
+        box-sizing: border-box;
+    }
 
-        @if (Model.Round.RequiresAmount)
-        {
-            <input type="number" step="0.01" name="amount" placeholder="Enter amount" required />
+    html, body {
+        margin: 0;
+        padding: 0;
+        scrollbar-gutter: stable;
+    }
+
+    body {
+        background: #f1f5f9;
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .rd-header {
+        background: var(--rd-blue);
+        border-radius: 14px;
+        padding: 1.1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .rd-header h2 {
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: #fff;
+        margin: 0;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .rd-header p {
+        font-size: 0.78rem;
+        color: #dbeafe;
+        margin: 0;
+        margin-top: 2px;
+    }
+
+    .rd-round-dots {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .rd-round-dot {
+        width: 22px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .rd-round-dot.done {
+        background: rgba(255, 255, 255, 0.55);
+    }
+
+    .rd-round-dot.active {
+        background: #fff;
+    }
+
+    .rd-fin-chart {
+        background: #fff;
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        border: 1px solid var(--rd-border);
+        box-shadow: 0 2px 16px rgba(30, 58, 95, 0.08);
+        margin-bottom: 1.25rem;
+    }
+
+    .rd-fin-chart-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .rd-fin-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--rd-blue);
+    }
+
+    .rd-fin-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--rd-navy);
+    }
+
+    .rd-bar-wrap {
+        position: relative;
+        height: 34px;
+        background: var(--rd-cream);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--rd-border);
+        display: flex;
+    }
+
+    .rd-bar-segment {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .rd-bar-expenses {
+        background: var(--rd-red);
+    }
+
+    .rd-bar-available-pos {
+        background: var(--rd-green);
+    }
+
+    .rd-bar-available-neg {
+        background: repeating-linear-gradient(45deg, var(--rd-red), var(--rd-red) 6px, #b91c1c 6px, #b91c1c 12px);
+    }
+
+    .rd-bar-legend {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 10px;
+        font-size: 0.75rem;
+        color: var(--rd-blue);
+        flex-wrap: wrap;
+    }
+
+    .rd-bar-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .rd-bar-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .rd-health-ribbon {
+        margin-top: 0.85rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .rd-health-ribbon.healthy {
+        background: var(--rd-green-soft);
+        color: #14532d;
+    }
+
+    .rd-health-ribbon.struggling {
+        background: var(--rd-yellow-soft);
+        color: #78350f;
+    }
+
+    .rd-health-ribbon.critical {
+        background: var(--rd-red-soft);
+        color: #7f1d1d;
+    }
+
+    .rd-health-ribbon-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.75;
+    }
+
+    .rd-health-ribbon-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .rd-card {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid var(--rd-border);
+        box-shadow: 0 2px 8px rgba(30, 58, 95, 0.06);
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rd-card-body {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rd-card-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--rd-ink);
+        line-height: 1.2;
+        margin: 0 0 0.5rem 0;
+        min-height: 2.8em;
+    }
+
+    .rd-card-desc {
+        font-size: 0.875rem;
+        color: #475569;
+        line-height: 1.6;
+        margin: 0 0 1rem 0;
+        min-height: 3em;
+        flex-grow: 1;
+    }
+
+    .rd-card-amount {
+        border-radius: 8px;
+        padding: 0.6rem 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        border: 1px solid;
+        flex-shrink: 0;
+    }
+
+    .rd-card-amount.pos {
+        background: var(--rd-green-soft);
+        border-color: #bbf7d0;
+    }
+
+    .rd-card-amount.neg {
+        background: var(--rd-blue-soft);
+        border-color: #bfdbfe;
+    }
+
+    .rd-card-amount-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .rd-card-amount.pos .rd-card-amount-label {
+        color: var(--rd-green);
+    }
+
+    .rd-card-amount.neg .rd-card-amount-label {
+        color: var(--rd-blue);
+    }
+
+    .rd-card-amount-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--rd-navy);
+    }
+
+    .rd-select-btn {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        background: var(--rd-blue);
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+        box-shadow: 0 2px 10px rgba(30, 58, 95, 0.2);
+        font-family: 'DM Sans', sans-serif;
+        flex-shrink: 0;
+    }
+
+    .rd-select-btn:hover {
+        background: var(--rd-blue-dark);
+        transform: translateY(-2px);
+    }
+
+    .rd-select-btn:active {
+        transform: translateY(0);
+    }
+
+    .rd-choice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        max-width: 860px;
+        margin: 0 auto;
+        auto-rows: 1fr;
+    }
+
+    @@media (max-width: 640px) {
+        .rd-choice-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .rd-single-card {
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    .rd-waiting {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--rd-border);
+        box-shadow: 0 2px 16px rgba(30, 58, 95, 0.08);
+        max-width: 480px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2.2rem 1.5rem;
+    }
+
+    .rd-waiting-icon {
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        color: var(--rd-blue);
+        margin-bottom: 1rem;
+    }
+
+    .rd-waiting-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--rd-navy);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .rd-waiting-sub {
+        font-size: 0.88rem;
+        color: var(--rd-blue);
+        max-width: 380px;
+        margin: 0;
+    }
+
+    #rd-submission-feedback {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        opacity: 0;
+        animation: rd-flash-in 0.35s ease-out forwards;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    #rd-submission-feedback.healthy {
+        background: #16a34a;
+        color: #fff;
+    }
+
+    #rd-submission-feedback.struggling {
+        background: #d97706;
+        color: #fff;
+    }
+
+    #rd-submission-feedback.critical {
+        background: #dc2626;
+        color: #fff;
+        animation: rd-flash-in 0.35s ease-out forwards, rd-shake 0.55s ease-in-out 0.35s;
+    }
+
+    @@keyframes rd-flash-in {
+        from {
+            opacity: 0;
         }
 
-        <button type="submit">Submit</button>
-    </form>
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes rd-shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        20% {
+            transform: translateX(-12px);
+        }
+
+        40% {
+            transform: translateX(12px);
+        }
+
+        60% {
+            transform: translateX(-8px);
+        }
+
+        80% {
+            transform: translateX(8px);
+        }
+    }
+
+    .rd-feedback-kicker {
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        opacity: 0.85;
+        margin-bottom: 0.75rem;
+    }
+
+    .rd-feedback-number {
+        font-size: clamp(3rem, 11vw, 6rem);
+        font-weight: 900;
+        line-height: 1;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .rd-feedback-status {
+        font-size: clamp(1.4rem, 4vw, 2rem);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin: 0;
+    }
+
+    #gc-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #gc-suspense {
+        width: 440px;
+        max-width: 92vw;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: gc-suspense-shake 0.45s ease-in-out 2;
+    }
+
+    .gc-suspense-header {
+        padding: 28px 20px;
+        background: linear-gradient(45deg, #dc2626 25%, #b91c1c 25%, #b91c1c 50%, #dc2626 50%, #dc2626 75%, #b91c1c 75%);
+        background-size: 28px 28px;
+        animation: gc-stripe-slide 0.9s linear infinite, gc-pulse-bright 1.2s ease-in-out infinite;
+        text-align: center;
+    }
+
+    .gc-suspense-header span {
+        font-size: 1.8rem;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        color: #fff;
+        text-transform: uppercase;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .gc-suspense-body {
+        padding: 2rem;
+        text-align: center;
+        color: var(--rd-blue);
+        font-size: 0.95rem;
+    }
+
+    .gc-suspense-dots {
+        display: inline-flex;
+        gap: 8px;
+    }
+
+    .gc-suspense-dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--rd-red);
+        animation: gc-dot-pulse 1.2s ease-in-out infinite;
+    }
+
+    .gc-suspense-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    .gc-suspense-dots span:nth-child(3) {
+        animation-delay: 0.30s;
+    }
+
+    @@keyframes gc-stripe-slide {
+        from {
+            background-position: 0 0;
+        }
+
+        to {
+            background-position: 28px 0;
+        }
+    }
+
+    @@keyframes gc-pulse-bright {
+        0%, 100% {
+            filter: brightness(1);
+        }
+
+        50% {
+            filter: brightness(1.18);
+        }
+    }
+
+    @@keyframes gc-suspense-shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        20% {
+            transform: translateX(-8px);
+        }
+
+        40% {
+            transform: translateX(8px);
+        }
+
+        60% {
+            transform: translateX(-5px);
+        }
+
+        80% {
+            transform: translateX(5px);
+        }
+    }
+
+    @@keyframes gc-dot-pulse {
+        0%, 100% {
+            transform: scale(0.8);
+            opacity: 0.4;
+        }
+
+        50% {
+            transform: scale(1.3);
+            opacity: 1;
+        }
+    }
+
+    #gc-card {
+        display: none;
+        width: 440px;
+        max-width: 92vw;
+        max-height: 90vh;
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        flex-direction: column;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04), 0 20px 40px rgba(0, 0, 0, 0.4);
+        animation: gc-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+        position: relative;
+    }
+
+    #gc-card.shown {
+        display: flex;
+    }
+
+    .gc-card-logo-watermark {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        width: 54px;
+        opacity: 0.08;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    @@keyframes gc-rise {
+        0% {
+            opacity: 0;
+            transform: translateY(40px) scale(0.7) rotate(-3deg);
+        }
+
+        60% {
+            opacity: 1;
+            transform: translateY(-6px) scale(1.04) rotate(1deg);
+        }
+
+        80% {
+            transform: translateY(2px) scale(0.99) rotate(-0.5deg);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotate(0deg);
+        }
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+</style>
+
+<!-- Hidden data attributes for JavaScript -->
+<div data-role="student" data-session-id="@Model.Session?.GameSessionId" data-round-number="@Model.CurrentRound?.RoundNumber" data-round-id="@Model.CurrentRound?.GameRoundId" style="display:none;"></div>
+
+<div class="container">
+
+    <!-- Round header with progress dots -->
+    <div class="rd-header">
+        <div>
+            <h2>
+                @if (Model.CurrentRound != null)
+                {
+                    <text>Round @Model.CurrentRound.RoundNumber — @Model.CurrentRound.RoundType</text>
+                }
+                else
+                {
+                    <text>Waiting for next round</text>
+                }
+            </h2>
+            @if (Model.Session?.Difficulty != null)
+            {
+                <p>Difficulty: @Model.Session.Difficulty</p>
+            }
+        </div>
+        <div class="rd-round-dots" aria-label="Round progress">
+            @for (int i = 1; i <= 5; i++)
+            {
+                var cls = i < currentRoundNum ? "rd-round-dot done" : i == currentRoundNum ? "rd-round-dot active" : "rd-round-dot";
+                <div class="@cls"></div>
+            }
+        </div>
+    </div>
+
+    <!-- Bar-chart financial strip -->
+    @if (Model.FinancialState != null)
+    {
+        var health = Model.FinancialState.FinancialHealth ?? "Healthy";
+        var healthClass = health == "Healthy" ? "healthy" : health == "Struggling" ? "struggling" : "critical";
+
+        var income = (double)Model.FinancialState.MonthlyIncome;
+        var expenses = (double)Model.FinancialState.MonthlyExpenses;
+        var available = (double)Model.FinancialState.Available;
+
+        double expensesPct = 0;
+        double availPct = 0;
+        double deficitPct = 0;
+        bool hasIncome = income > 0;
+
+        if (hasIncome)
+        {
+            if (expenses <= income)
+            {
+                expensesPct = (expenses / income) * 100.0;
+                availPct = 100.0 - expensesPct;
+            }
+            else
+            {
+                expensesPct = (income / expenses) * 100.0;
+                deficitPct = 100.0 - expensesPct;
+            }
+        }
+
+        <div class="rd-fin-chart">
+            <div class="rd-fin-chart-top">
+                <div>
+                    <div class="rd-fin-label">Monthly income</div>
+                    <div class="rd-fin-value">$@Model.FinancialState.MonthlyIncome.ToString("N0")</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="rd-fin-label">Annual salary</div>
+                    <div class="rd-fin-value" style="font-size:1rem;">$@Model.FinancialState.Salary.ToString("N0")</div>
+                </div>
+            </div>
+
+            <div class="rd-bar-wrap" title="Your monthly income broken down by expenses and available">
+                @if (!hasIncome)
+                {
+                    <div class="rd-bar-segment" style="width: 100%; background: var(--rd-cream); color: var(--rd-ink); font-weight: 500;">
+                        No income yet — choose a career to begin
+                    </div>
+                }
+                else
+                {
+                    @if (expensesPct > 0)
+                    {
+                        <div class="rd-bar-segment rd-bar-expenses" style="width: @(expensesPct.ToString("F2"))%;">
+                            @if (expensesPct > 18)
+                            {
+                                <text>-$@expenses.ToString("N0")</text>
+                            }
+                        </div>
+                    }
+                    @if (availPct > 0)
+                    {
+                        <div class="rd-bar-segment rd-bar-available-pos" style="width: @(availPct.ToString("F2"))%;">
+                            @if (availPct > 18)
+                            {
+                                <text>+$@available.ToString("N0")</text>
+                            }
+                        </div>
+                    }
+                    @if (deficitPct > 0)
+                    {
+                        <div class="rd-bar-segment rd-bar-available-neg" style="width: @(deficitPct.ToString("F2"))%;">
+                            @if (deficitPct > 18)
+                            {
+                                <text>-$@Math.Abs(available).ToString("N0")</text>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="rd-bar-legend">
+                <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-red);"></span>Expenses $@expenses.ToString("N0")</span>
+                <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-green);"></span>Available @(available >= 0 ? "+" : "")$@available.ToString("N0")</span>
+            </div>
+
+            <div class="rd-health-ribbon @healthClass">
+                <span class="rd-health-ribbon-label">Financial Health</span>
+                <span class="rd-health-ribbon-value">@health</span>
+            </div>
+        </div>
+    }
+
+    <!-- Waiting / no round -->
+    @if (!string.IsNullOrEmpty(Model.WaitingMessage))
+    {
+        <div class="rd-waiting">
+            <div class="rd-waiting-icon">WAITING</div>
+            <div class="rd-waiting-title">Waiting...</div>
+            <div class="rd-waiting-sub">@Model.WaitingMessage</div>
+        </div>
+    }
+    else if (Model.CurrentRound == null)
+    {
+        <div class="rd-waiting">
+            <div class="rd-waiting-icon">NEXT ROUND</div>
+            <div class="rd-waiting-title">Waiting for the next round</div>
+            <div class="rd-waiting-sub">Your educator will open the next round shortly.</div>
+        </div>
+    }
+    else if (Model.AssignedCard != null && Model.AssignedCard.Card != null)
+    {
+        var cardAmt = Model.AssignedCard.Card.MonthlyAmount ?? 0;
+        var isIncome = Model.CurrentRound.RoundType == "Career";
+        var amtClass = isIncome ? "pos" : "neg";
+        var amtPrefix = isIncome ? "+" : "-";
+
+        <!-- RandomAssigned mode -->
+        <form method="post" asp-page-handler="SelectChoice" data-submitted-health="@(Model.FinancialState?.FinancialHealth ?? "Healthy")" data-submitted-available="@(Model.FinancialState?.Available.ToString("N0") ?? "0")">
+            <div class="rd-single-card">
+                <div class="rd-card">
+                    <div class="rd-card-body">
+                        <div class="rd-card-title">@Model.AssignedCard.Card.Title</div>
+                        <p class="rd-card-desc">@Model.AssignedCard.Card.Description</p>
+                        <div class="rd-card-amount @amtClass">
+                            <span class="rd-card-amount-label">Monthly Impact</span>
+                            <span class="rd-card-amount-value">@amtPrefix$@cardAmt.ToString("N0") / mo</span>
+                        </div>
+                        <button type="submit" class="rd-select-btn"
+                                name="chosenCardId" value="@Model.AssignedCard.Card.CardId"
+                                onclick="this.form.querySelector('[name=submittedAmount]').value = '@Model.AssignedCard.Card.MonthlyAmount'; rdShowSubmissionFeedback(this.form);">
+                            Confirm Selection
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" name="submittedAmount" value="0" />
+        </form>
+    }
+    else if (Model.Cards != null && Model.Cards.Count > 0)
+    {
+        <!-- ChooseFromFour mode -->
+        <form method="post" asp-page-handler="SelectChoice" data-submitted-health="@(Model.FinancialState?.FinancialHealth ?? "Healthy")" data-submitted-available="@(Model.FinancialState?.Available.ToString("N0") ?? "0")">
+            <div class="rd-choice-grid">
+                @foreach (var card in Model.Cards)
+                {
+                    if (card != null)
+                    {
+                        var cardAmt = card.MonthlyAmount ?? 0;
+                        <div class="rd-card">
+                            <div class="rd-card-body">
+                                <div class="rd-card-title">@card.Title</div>
+                                <p class="rd-card-desc">@card.Description</p>
+                                <div class="rd-card-amount neg">
+                                    <span class="rd-card-amount-label">Monthly Impact</span>
+                                    <span class="rd-card-amount-value">-$@cardAmt.ToString("N0") / mo</span>
+                                </div>
+                                <button type="submit" class="rd-select-btn"
+                                        name="chosenCardId" value="@card.CardId"
+                                        onclick="this.form.querySelector('[name=submittedAmount]').value = '@card.MonthlyAmount'; rdShowSubmissionFeedback(this.form);">
+                                    Choose this
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <input type="hidden" name="submittedAmount" value="0" />
+        </form>
+    }
+</div>
+
+<!-- ── GAME CHANGER ONLY ────────────────────────────────────── -->
+@if (Model.PendingGameChanger != null)
+{
+    var gc = Model.PendingGameChanger;
+    var baseIncome = Model.FinancialState?.BaseMonthlyIncome ?? 0;
+
+    bool isPositive;
+    string effectLabel;
+    string effectAmount;
+
+    if (gc.IncomeEffectPercent != null)
+    {
+        var pct = gc.IncomeEffectPercent.Value;
+        var dollars = Math.Abs(baseIncome * pct);
+        isPositive = pct >= 0;
+        effectLabel = isPositive ? "Income Increase" : "Income Reduction";
+        effectAmount = (isPositive ? "+" : "-") + "$" + dollars.ToString("N0") + " / mo (" + (isPositive ? "+" : "") + (pct * 100m).ToString("0") + "%)";
+    }
+    else if (gc.IncomeEffect != null)
+    {
+        var val = gc.IncomeEffect.Value;
+        isPositive = val >= 0;
+        effectLabel = isPositive ? "Monthly Income Boost" : "Monthly Income Loss";
+        effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+    }
+    else if (gc.ExpenseEffect != null)
+    {
+        var val = gc.ExpenseEffect.Value;
+        isPositive = val <= 0;
+        effectLabel = isPositive ? "Monthly Savings" : "Monthly Added Cost";
+        effectAmount = (isPositive ? "-" : "+") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+    }
+    else
+    {
+        var val = gc.MonthlyAmount ?? 0;
+        isPositive = val >= 0;
+        effectLabel = isPositive ? "One-Time Bonus" : "One-Time Penalty";
+        effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0");
+    }
+
+    var headerColor = isPositive ? "#22c55e" : "#dc2626";
+    var accentColor = isPositive ? "#16a34a" : "#dc2626";
+    var darkColor = isPositive ? "#15803d" : "#991b1b";
+    var lightBg = isPositive ? "#f0fdf4" : "#fef2f2";
+    var borderColor = isPositive ? "#bbf7d0" : "#fecaca";
+
+    <div id="gc-overlay">
+        <!-- Suspense phase (shown first, ~2.5s) -->
+        <div id="gc-suspense">
+            <div class="gc-suspense-header">
+                <span>Game Changer</span>
+            </div>
+            <div class="gc-suspense-body">
+                <div class="gc-suspense-dots"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+
+        <!-- Reveal phase (revealed after suspense) -->
+        <div id="gc-card" style="border: 2px solid @borderColor;">
+            <div style="
+                padding: 16px 20px;
+                background: @headerColor;
+                position: relative;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 62px;
+                flex-shrink: 0;">
+                <div style="
+                    position: absolute;
+                    inset: 0;
+                    background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px);"></div>
+                <span style="
+                    font-size: 1.45rem;
+                    font-weight: 900;
+                    letter-spacing: 0.12em;
+                    color: #fff;
+                    text-transform: uppercase;
+                    position: relative;
+                    z-index: 2;
+                    text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
+            </div>
+
+            <div style="padding: 16px 20px 18px; background: #fff; flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; z-index: 2; font-family: 'DM Sans', sans-serif;">
+                <h1 style="font-size: 1.65rem; font-weight: 700; color: #111827; line-height: 1.15; margin: 0 0 10px 0;">
+                    @gc.Title
+                </h1>
+
+                <p style="font-size: 0.875rem; color: #374151; line-height: 1.6; margin: 0 0 12px 0; flex: 1;">@gc.Description</p>
+
+                <p style="font-size: 0.63rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #6b7280; margin: 0 0 6px 0;">Financial Impact</p>
+
+                <div style="border-radius: 10px; border: 1.5px solid @borderColor; padding: 12px 14px; margin-bottom: 8px; background: @lightBg; display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: @accentColor; margin: 0 0 4px 0;">@effectLabel</span>
+                    <span style="font-size: 1.75rem; font-weight: 700; color: @darkColor; font-family: 'Playfair Display', serif; margin: 0;">@effectAmount</span>
+                </div>
+
+                <hr style="border: none; border-top: 1.5px solid @borderColor; margin: 8px 0 12px;" />
+
+                <button onclick="document.getElementById('gc-overlay').style.display='none'" style="display: block; width: 100%; padding: 13px; background: @accentColor; color: #fff; border: none; border-radius: 999px; font-size: 0.92rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-family: 'DM Sans', sans-serif; margin: 0;">
+                    Continue
+                </button>
+            </div>
+
+            <img class="gc-card-logo-watermark" src="~/images/DealtHandsLogo.png" alt="" />
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var suspense = document.getElementById('gc-suspense');
+            var card = document.getElementById('gc-card');
+            setTimeout(function () {
+                if (suspense) suspense.style.display = 'none';
+                if (card) card.classList.add('shown');
+            }, 2500);
+        })();
+    </script>
+}
+  
+<script>
+    // Shared flag used by this page and the poller to avoid reloads during UI transitions
+    window.pollActive = window.pollActive || false;
+
+    function rdShowSubmissionFeedback(form) {
+        // Tell the poller to pause
+        window.pollActive = true;
+
+        try {
+            // Remove any existing feedback immediately (prevent duplicates)
+            var existing = document.getElementById('rd-submission-feedback');
+            if (existing) existing.remove();
+
+            var health = form.getAttribute('data-submitted-health') || 'Healthy';
+            var available = form.getAttribute('data-submitted-available') || '0';
+            var healthClass = health === 'Healthy' ? 'healthy' : health === 'Struggling' ? 'struggling' : 'critical';
+            var kicker = health === 'Healthy' ? 'Choice confirmed' : health === 'Struggling' ? 'Getting tight...' : 'Running the red';
+
+            var div = document.createElement('div');
+            div.id = 'rd-submission-feedback';
+            div.className = healthClass;
+            div.innerHTML = '<div class="rd-feedback-kicker">' + kicker + '</div>' + '<div class="rd-feedback-number">$' + available + '</div>' + '<div class="rd-feedback-status">' + health + '</div>';
+            document.body.appendChild(div);
+
+            // Remove the feedback after a short period and re-enable polling
+            setTimeout(function () {
+                var el = document.getElementById('rd-submission-feedback');
+                if (el) el.remove();
+                window.pollActive = false;
+            }, 1800);
+        } catch (e) { window.pollActive = false; }
+    }
+</script>
+
+@section Scripts {
+    <script src="~/js/round.js"></script>
 }
