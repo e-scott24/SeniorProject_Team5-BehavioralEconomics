@@ -1,0 +1,292 @@
+@page
+@model DealtHands.Pages.GameChangerModel
+@{
+    ViewData["Title"] = "Game Changer";
+}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+    .gc-card {
+        width: 440px;
+        height: 660px;
+        background: #ffffff;
+        border-radius: 16px;
+        border: 2px solid;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 20px 40px rgba(0,0,0,0.35);
+        animation: gc-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .gc-card.settled {
+        animation: none !important;
+    }
+
+    @@keyframes gc-rise {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .gc-header {
+        padding: 16px 20px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 62px;
+        flex-shrink: 0;
+    }
+
+        .gc-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient( -45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px );
+        }
+
+    .gc-header-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.45rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: #fff;
+        text-transform: uppercase;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+
+    .gc-body {
+        padding: 16px 20px 18px;
+        background: #fff;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .gc-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.15;
+        margin-bottom: 10px;
+    }
+
+    .gc-desc {
+        font-size: 0.875rem;
+        color: #374151;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .gc-financial-label {
+        font-size: 0.63rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .gc-effect-box {
+        border-radius: 10px;
+        border: 1.5px solid;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        animation: gc-pop 0.5s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .gc-effect-box.settled {
+        animation: none !important;
+    }
+
+    @@keyframes gc-pop {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .gc-effect-amount {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+    }
+
+    .gc-effect-sublabel {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .gc-hr {
+        border: none;
+        border-top: 1.5px solid;
+        margin: 8px 0 12px;
+    }
+
+    .gc-btn {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.92rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: filter 0.18s, transform 0.14s;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+        .gc-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        .gc-btn:active {
+            filter: brightness(0.95);
+            transform: translateY(0);
+        }
+
+    @@media (max-width: 480px) {
+        .gc-card {
+            width: 92vw;
+            height: auto;
+            min-height: 520px;
+        }
+
+        .gc-title {
+            font-size: 1.35rem;
+        }
+
+        .gc-effect-amount {
+            font-size: 1.45rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const continueBtn = document.querySelector('.gc-btn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', function (e) {
+                const card = document.querySelector('.gc-card');
+                const effectBox = document.querySelector('.gc-effect-box');
+
+                if (card) card.classList.add('settled');
+                if (effectBox) effectBox.classList.add('settled');
+            });
+        }
+    });
+</script>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-auto">
+
+            @if (Model.GameChangerUgc != null)
+            {
+                var gc = Model.GameChangerUgc.GameChanger;
+
+                // Determine display value and label based on which effect column is populated.
+                // Priority: IncomeEffectPercent > IncomeEffect > ExpenseEffect > MonthlyAmount
+                bool isPositive;
+                string effectLabel;
+                string effectAmount;
+
+                if (gc?.IncomeEffectPercent != null)
+                {
+                    var pct = gc.IncomeEffectPercent.Value;
+                    isPositive = pct >= 0;
+                    effectLabel = isPositive ? "Income Increase" : "Income Reduction";
+                    effectAmount = (isPositive ? "+" : "") + (pct * 100m).ToString("0") + "% Monthly Income";
+                }
+                else if (gc?.IncomeEffect != null)
+                {
+                    var val = gc.IncomeEffect.Value;
+                    isPositive = val >= 0;
+                    effectLabel = isPositive ? "Monthly Income Boost" : "Monthly Income Loss";
+                    effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+                }
+                else if (gc?.ExpenseEffect != null)
+                {
+                    var val = gc.ExpenseEffect.Value;
+                    isPositive = val <= 0; // negative expense = savings = good
+                    effectLabel = isPositive ? "Monthly Savings" : "Monthly Added Cost";
+                    effectAmount = (isPositive ? "-" : "+") + "$" + Math.Abs(val).ToString("N0") + " / mo";
+                }
+                else
+                {
+                    var val = Model.GameChangerUgc.SubmittedAmount ?? 0;
+                    isPositive = val >= 0;
+                    effectLabel = isPositive ? "One-Time Bonus" : "One-Time Penalty";
+                    effectAmount = (isPositive ? "+" : "-") + "$" + Math.Abs(val).ToString("N0");
+                }
+
+                var headerColor = isPositive ? "#22c55e" : "#dc2626";
+                var accentColor = isPositive ? "#16a34a" : "#dc2626";
+                var darkColor = isPositive ? "#15803d" : "#991b1b";
+                var lightBg = isPositive ? "#f0fdf4" : "#fef2f2";
+                var borderColor = isPositive ? "#bbf7d0" : "#fecaca";
+
+                <div class="gc-card" style="border-color: @borderColor;">
+                    <div class="gc-header" style="background: @headerColor;">
+                        <span class="gc-header-title">Game Changer</span>
+                    </div>
+                    <div class="gc-body">
+                        <h1 class="gc-title">@gc?.Title</h1>
+                        <p class="gc-desc">@gc?.Description</p>
+                        <p class="gc-financial-label">Financial Impact</p>
+                        <div class="gc-effect-box" style="background: @lightBg; border-color: @borderColor;">
+                            <span class="gc-effect-sublabel" style="color: @accentColor;">@effectLabel</span>
+                            <span class="gc-effect-amount" style="color: @darkColor;">@effectAmount</span>
+                        </div>
+                        <hr class="gc-hr" style="border-top-color: @borderColor;" />
+                        <form method="post" asp-page-handler="Continue">
+                            <button type="submit" class="gc-btn" style="background: @accentColor;">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning text-center">
+                    <p class="mb-3">No game changer found for this round.</p>
+                    <a href="/Round" class="btn btn-primary">Return to Round</a>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

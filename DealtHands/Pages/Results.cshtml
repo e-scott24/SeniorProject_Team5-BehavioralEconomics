@@ -1,0 +1,242 @@
+@page
+@model DealtHands.Pages.ResultsModel
+@{
+    ViewData["Title"] = "Game Results";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow" id="results-content">
+                <div class="card-header bg-success text-white text-center">
+                    <h2 class="mb-0">GAME COMPLETE!</h2>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <h3>Your Final Financial Health</h3>
+                        <div style="font-size: 5rem;"></div>
+                        <h4 class="text-success">@Model.FinancialState?.FinancialHealth</h4>
+                    </div>
+                    <hr>
+                    <div class="row text-start">
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Income</h6>
+                                    <h4 class="text-success">$@Model.FinancialState?.MonthlyIncome.ToString("N0")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Expenses</h6>
+                                    <h4 class="text-danger">$@Model.FinancialState?.MonthlyExpenses.ToString("N0")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Monthly Available</h6>
+                                    <h4 class="text-primary">$@Model.FinancialState?.Available.ToString("N0")</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Partial leaderboard — shows the student their rank without revealing everyone's details *@
+                    @if (Model.TotalPlayers > 1 && Model.PlayerRank > 0)
+                    {
+                        <hr>
+                        <div class="card border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Your Class Ranking</h5>
+                            </div>
+                            <div class="card-body text-center py-3">
+                                <h2 class="mb-1">
+                                    #@Model.PlayerRank
+                                    <small class="text-muted fs-5">of @Model.TotalPlayers players</small>
+                                </h2>
+                                <p class="text-muted mb-0">
+                                    Final Score: <strong class="@(Model.PlayerScore >= 0 ? "text-success" : "text-danger")">
+                                        $@Model.PlayerScore.ToString("N2")
+                                    </strong>
+                                </p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.Leaderboard != null && Model.Leaderboard.Count > 1)
+                    {
+                        var maxScore = Model.Leaderboard.Max(e => (double)e.CurrentScore);
+                        var minScore = Model.Leaderboard.Min(e => (double)e.CurrentScore);
+                        var range = Math.Max(Math.Abs(maxScore), Math.Abs(minScore));
+                        if (range == 0) { range = 1; }
+
+                        <hr>
+                        <div class="card border-secondary mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Class Comparison</h5>
+                            </div>
+                            <div class="card-body">
+                                @for (int i = 0; i < Model.Leaderboard.Count; i++)
+                                {
+                                    var entry = Model.Leaderboard[i];
+                                    var score = (double)entry.CurrentScore;
+                                    var pct = (Math.Abs(score) / range) * 50.0;
+                                    var isMe = (i + 1) == Model.PlayerRank;
+                                    var barColor = score >= 0 ? "#16a34a" : "#dc2626";
+                                    var rowStyle = isMe
+                                    ? "display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:6px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe;"
+                                    : "display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:6px 10px; border-radius:6px;";
+                                    var nameWeight = isMe ? "700" : "500";
+
+                                    <div style="@rowStyle">
+                                        <div style="width:120px; font-weight:@nameWeight; font-size:0.88rem; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                            @entry.Username@(isMe ? " (you)" : "")
+                                        </div>
+                                        <div style="flex:1; height:22px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; position:relative; display:flex;">
+                                            <div style="width:50%; display:flex; justify-content:flex-end;">
+                                                @if (score < 0)
+                                                {
+                                                    <div style="background:@barColor; width:@(pct.ToString("F2"))%; height:100%; border-radius:4px 0 0 4px;"></div>
+                                                }
+                                            </div>
+                                            <div style="width:1px; background:#64748b;"></div>
+                                            <div style="width:50%;">
+                                                @if (score >= 0)
+                                                {
+                                                    <div style="background:@barColor; width:@(pct.ToString("F2"))%; height:100%; border-radius:0 4px 4px 0;"></div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div style="width:100px; font-weight:@nameWeight; font-size:0.88rem; color:@barColor; text-align:left;">
+                                            @(score >= 0 ? "+" : "")$@entry.CurrentScore.ToString("N0")
+                                        </div>
+                                    </div>
+                                }
+                                <p class="text-muted text-center mt-2 mb-0" style="font-size:0.75rem;">Bars extend left for negative, right for positive. Center line = $0.</p>
+                            </div>
+                        </div>
+                    }
+
+                    <hr>
+                    <h5 class="mb-3">Key Takeaways</h5>
+                    <div class="alert alert-info text-start">
+                        <ul class="mb-0">
+                            <li>Your monthly income was $@Model.FinancialState?.MonthlyIncome.ToString("N0")</li>
+                            <li>Your total monthly expenses were $@Model.FinancialState?.MonthlyExpenses.ToString("N0")</li>
+                            <li>You finished with $@Model.FinancialState?.Available.ToString("N0") available each month</li>
+                            @if (Model.FinancialState?.GameChangerBalance != 0)
+                            {
+                                <li>Game changers adjusted your balance by $@Model.FinancialState?.GameChangerBalance.ToString("N0")</li>
+                            }
+                            <li>Your financial health status: @Model.FinancialState?.FinancialHealth</li>
+                        </ul>
+                    </div>
+
+                    <!-- Round-by-Round Breakdown (always visible for PDF) -->
+                    <div class="mt-4" id="detailed-report-section">
+                        <h5 class="mb-3">Round-by-Round Breakdown</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Round</th>
+                                    <th>Type</th>
+                                    <th>Card</th>
+                                    <th>Amount</th>
+                                    <th>Running Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ugc in Model.PlayerHistory.OrderBy(u => u.AssignedAt))
+                                {
+                                    <tr>
+                                        <td>@ugc.GameRound?.RoundNumber</td>
+                                        <td>@ugc.GameRound?.RoundType</td>
+                                        <td>
+                                            @(ugc.Card?.Title ?? ugc.GameChanger?.Title)
+                                            @if (ugc.GameChangerId != null)
+                                            {
+                                                <span class="badge bg-warning text-dark">Game Changer</span>
+                                            }
+                                        </td>
+                                        <td class="@(ugc.SubmittedAmount >= 0 ? "text-success" : "text-danger")">
+                                            @(ugc.SubmittedAmount >= 0 ? "+" : "")$@ugc.SubmittedAmount?.ToString("N2")
+                                        </td>
+                                        <td class="@(ugc.RunningTotal >= 0 ? "text-success" : "text-danger")">
+                                            $@ugc.RunningTotal?.ToString("N2")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4 no-print">
+                        <button class="btn btn-success btn-lg" onclick="downloadPDF()">
+                            Download Report as PDF
+                        </button>
+                        <a href="/JoinSession" class="btn btn-primary btn-lg">Play Again</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        async function downloadPDF() {
+            const element = document.getElementById('results-content');
+
+            // Hide the buttons before generating PDF
+            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+
+            try {
+                // Capture the element as canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Add new pages if content is longer than one page
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save('DealtHands_Game_Results.pdf');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            } finally {
+                // Show buttons again
+                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+            }
+        }
+    </script>
+}
