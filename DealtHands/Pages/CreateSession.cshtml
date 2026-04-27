@@ -1,0 +1,111 @@
+@page
+@model DealtHands.Pages.CreateSessionModel
+@{
+    ViewData["Title"] = "Create Session";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">Create New Game Session</h2>
+                </div>
+                <div class="card-body">
+
+                    @* Display validation errors *@
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <div>@error.ErrorMessage</div>
+                            }
+                        </div>
+                    }
+
+                    <form method="post">
+
+                        <div class="mb-3">
+                            <label class="form-label">Session Name</label>
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Period 3 - Economics"
+                                   asp-for="SessionName"
+                                   maxlength="100"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Game Mode</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="GameMode"
+                                       id="random"
+                                       value="RandomAssigned"
+                                       asp-for="GameMode"
+                                       checked>
+                                <label class="btn btn-outline-primary" for="random">Random Selection</label>
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="GameMode"
+                                       id="structured"
+                                       value="Structured"
+                                       asp-for="GameMode">
+                                <label class="btn btn-outline-primary" for="structured">Structured Play</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Difficulty</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="Difficulty"
+                                       id="easy"
+                                       value="Easy"
+                                       asp-for="Difficulty">
+                                <label class="btn btn-outline-success" for="easy">Easy</label>
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="Difficulty"
+                                       id="medium"
+                                       value="Medium"
+                                       asp-for="Difficulty"
+                                       checked>
+                                <label class="btn btn-outline-warning" for="medium">Medium</label>
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="Difficulty"
+                                       id="hard"
+                                       value="Hard"
+                                       asp-for="Difficulty">
+                                <label class="btn btn-outline-danger" for="hard">Hard</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Max Players</label>
+                            <input type="number"
+                                   class="form-control"
+                                   value="35"
+                                   min="1"
+                                   max="100"
+                                   asp-for="MaxPlayers">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Create Session
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
