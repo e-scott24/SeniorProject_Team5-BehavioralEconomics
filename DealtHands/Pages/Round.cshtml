@@ -49,21 +49,21 @@
         flex-wrap: wrap;
     }
 
-    .rd-header h2 {
-        font-size: 1.35rem;
-        font-weight: 900;
-        color: #fff;
-        margin: 0;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-    }
+        .rd-header h2 {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
 
-    .rd-header p {
-        font-size: 0.78rem;
-        color: #dbeafe;
-        margin: 0;
-        margin-top: 2px;
-    }
+        .rd-header p {
+            font-size: 0.78rem;
+            color: #dbeafe;
+            margin: 0;
+            margin-top: 2px;
+        }
 
     .rd-round-dots {
         display: flex;
@@ -78,13 +78,13 @@
         background: rgba(255, 255, 255, 0.2);
     }
 
-    .rd-round-dot.done {
-        background: rgba(255, 255, 255, 0.55);
-    }
+        .rd-round-dot.done {
+            background: rgba(255, 255, 255, 0.55);
+        }
 
-    .rd-round-dot.active {
-        background: #fff;
-    }
+        .rd-round-dot.active {
+            background: #fff;
+        }
 
     .rd-fin-chart {
         background: #fff;
@@ -185,20 +185,20 @@
         justify-content: space-between;
     }
 
-    .rd-health-ribbon.healthy {
-        background: var(--rd-green-soft);
-        color: #14532d;
-    }
+        .rd-health-ribbon.healthy {
+            background: var(--rd-green-soft);
+            color: #14532d;
+        }
 
-    .rd-health-ribbon.struggling {
-        background: var(--rd-yellow-soft);
-        color: #78350f;
-    }
+        .rd-health-ribbon.struggling {
+            background: var(--rd-yellow-soft);
+            color: #78350f;
+        }
 
-    .rd-health-ribbon.critical {
-        background: var(--rd-red-soft);
-        color: #7f1d1d;
-    }
+        .rd-health-ribbon.critical {
+            background: var(--rd-red-soft);
+            color: #7f1d1d;
+        }
 
     .rd-health-ribbon-label {
         font-size: 0.68rem;
@@ -259,15 +259,15 @@
         flex-shrink: 0;
     }
 
-    .rd-card-amount.pos {
-        background: var(--rd-green-soft);
-        border-color: #bbf7d0;
-    }
+        .rd-card-amount.pos {
+            background: var(--rd-green-soft);
+            border-color: #bbf7d0;
+        }
 
-    .rd-card-amount.neg {
-        background: var(--rd-blue-soft);
-        border-color: #bfdbfe;
-    }
+        .rd-card-amount.neg {
+            background: var(--rd-blue-soft);
+            border-color: #bfdbfe;
+        }
 
     .rd-card-amount-label {
         font-size: 0.7rem;
@@ -308,14 +308,14 @@
         flex-shrink: 0;
     }
 
-    .rd-select-btn:hover {
-        background: var(--rd-blue-dark);
-        transform: translateY(-2px);
-    }
+        .rd-select-btn:hover {
+            background: var(--rd-blue-dark);
+            transform: translateY(-2px);
+        }
 
-    .rd-select-btn:active {
-        transform: translateY(0);
-    }
+        .rd-select-btn:active {
+            transform: translateY(0);
+        }
 
     .rd-choice-grid {
         display: grid;
@@ -323,7 +323,7 @@
         gap: 1rem;
         max-width: 860px;
         margin: 0 auto;
-        auto-rows: 1fr;
+        align-items: start;
     }
 
     @@media (max-width: 640px) {
@@ -389,21 +389,21 @@
         font-family: 'DM Sans', sans-serif;
     }
 
-    #rd-submission-feedback.healthy {
-        background: #16a34a;
-        color: #fff;
-    }
+        #rd-submission-feedback.healthy {
+            background: #16a34a;
+            color: #fff;
+        }
 
-    #rd-submission-feedback.struggling {
-        background: #d97706;
-        color: #fff;
-    }
+        #rd-submission-feedback.struggling {
+            background: #d97706;
+            color: #fff;
+        }
 
-    #rd-submission-feedback.critical {
-        background: #dc2626;
-        color: #fff;
-        animation: rd-flash-in 0.35s ease-out forwards, rd-shake 0.55s ease-in-out 0.35s;
-    }
+        #rd-submission-feedback.critical {
+            background: #dc2626;
+            color: #fff;
+            animation: rd-flash-in 0.35s ease-out forwards, rd-shake 0.55s ease-in-out 0.35s;
+        }
 
     @@keyframes rd-flash-in {
         from {
@@ -485,20 +485,20 @@
 
     .gc-suspense-header {
         padding: 28px 20px;
-        background: linear-gradient(45deg, #dc2626 25%, #b91c1c 25%, #b91c1c 50%, #dc2626 50%, #dc2626 75%, #b91c1c 75%);
+        background: linear-gradient(45deg, #d97706 25%, #b45309 25%, #b45309 50%, #d97706 50%, #d97706 75%, #b45309 75%);
         background-size: 28px 28px;
         animation: gc-stripe-slide 0.9s linear infinite, gc-pulse-bright 1.2s ease-in-out infinite;
         text-align: center;
     }
 
-    .gc-suspense-header span {
-        font-size: 1.8rem;
-        font-weight: 900;
-        letter-spacing: 0.15em;
-        color: #fff;
-        text-transform: uppercase;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    }
+        .gc-suspense-header span {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            color: #fff;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
 
     .gc-suspense-body {
         padding: 2rem;
@@ -512,21 +512,21 @@
         gap: 8px;
     }
 
-    .gc-suspense-dots span {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--rd-red);
-        animation: gc-dot-pulse 1.2s ease-in-out infinite;
-    }
+        .gc-suspense-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--rd-yellow);
+            animation: gc-dot-pulse 1.2s ease-in-out infinite;
+        }
 
-    .gc-suspense-dots span:nth-child(2) {
-        animation-delay: 0.15s;
-    }
+            .gc-suspense-dots span:nth-child(2) {
+                animation-delay: 0.15s;
+            }
 
-    .gc-suspense-dots span:nth-child(3) {
-        animation-delay: 0.30s;
-    }
+            .gc-suspense-dots span:nth-child(3) {
+                animation-delay: 0.30s;
+            }
 
     @@keyframes gc-stripe-slide {
         from {
@@ -596,9 +596,9 @@
         position: relative;
     }
 
-    #gc-card.shown {
-        display: flex;
-    }
+        #gc-card.shown {
+            display: flex;
+        }
 
     .gc-card-logo-watermark {
         position: absolute;
@@ -678,23 +678,26 @@
 
         var income = (double)Model.FinancialState.MonthlyIncome;
         var expenses = (double)Model.FinancialState.MonthlyExpenses;
-        var available = (double)Model.FinancialState.Available;
+        var bankBalance = (double)Model.FinancialState.GameChangerBalance;
+        var totalResources = income + Math.Max(0.0, bankBalance);
+        var surplus = totalResources - expenses;
 
         double expensesPct = 0;
-        double availPct = 0;
+        double surplusPct = 0;
         double deficitPct = 0;
-        bool hasIncome = income > 0;
+        bool hasResources = totalResources > 0;
+        bool isOverspending = expenses > totalResources;
 
-        if (hasIncome)
+        if (hasResources)
         {
-            if (expenses <= income)
+            if (!isOverspending)
             {
-                expensesPct = (expenses / income) * 100.0;
-                availPct = 100.0 - expensesPct;
+                expensesPct = (expenses / totalResources) * 100.0;
+                surplusPct = 100.0 - expensesPct;
             }
             else
             {
-                expensesPct = (income / expenses) * 100.0;
+                expensesPct = (totalResources / expenses) * 100.0;
                 deficitPct = 100.0 - expensesPct;
             }
         }
@@ -711,8 +714,8 @@
                 </div>
             </div>
 
-            <div class="rd-bar-wrap" title="Your monthly income broken down by expenses and available">
-                @if (!hasIncome)
+            <div class="rd-bar-wrap" title="Your monthly income broken down by expenses and surplus">
+                @if (!hasResources)
                 {
                     <div class="rd-bar-segment" style="width: 100%; background: var(--rd-cream); color: var(--rd-ink); font-weight: 500;">
                         No income yet — choose a career to begin
@@ -729,12 +732,12 @@
                             }
                         </div>
                     }
-                    @if (availPct > 0)
+                    @if (surplusPct > 0)
                     {
-                        <div class="rd-bar-segment rd-bar-available-pos" style="width: @(availPct.ToString("F2"))%;">
-                            @if (availPct > 18)
+                        <div class="rd-bar-segment rd-bar-available-pos" style="width: @(surplusPct.ToString("F2"))%;">
+                            @if (surplusPct > 18)
                             {
-                                <text>+$@available.ToString("N0")</text>
+                                <text>+$@surplus.ToString("N0")</text>
                             }
                         </div>
                     }
@@ -743,7 +746,7 @@
                         <div class="rd-bar-segment rd-bar-available-neg" style="width: @(deficitPct.ToString("F2"))%;">
                             @if (deficitPct > 18)
                             {
-                                <text>-$@Math.Abs(available).ToString("N0")</text>
+                                <text>-$@Math.Abs(surplus).ToString("N0") over</text>
                             }
                         </div>
                     }
@@ -752,7 +755,18 @@
 
             <div class="rd-bar-legend">
                 <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-red);"></span>Expenses $@expenses.ToString("N0")</span>
-                <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-green);"></span>Available @(available >= 0 ? "+" : "")$@available.ToString("N0")</span>
+                @if (isOverspending)
+                {
+                    <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-red);"></span>Overspending -$@Math.Abs(surplus).ToString("N0")</span>
+                }
+                else
+                {
+                    <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-green);"></span>Surplus @(surplus >= 0 ? "+" : "")$@surplus.ToString("N0")</span>
+                }
+                @if (Math.Abs(bankBalance) >= 1)
+                {
+                    <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:@(bankBalance >= 0 ? "var(--rd-blue)" : "var(--rd-yellow)");"></span>Bank Balance @(bankBalance >= 0 ? "+" : "")$@bankBalance.ToString("N0")</span>
+                }
             </div>
 
             <div class="rd-health-ribbon @healthClass">
@@ -810,6 +824,10 @@
     }
     else if (Model.Cards != null && Model.Cards.Count > 0)
     {
+        var isIncome = Model.CurrentRound.RoundType == "Career";
+        var amtClass = isIncome ? "pos" : "neg";
+        var amtPrefix = isIncome ? "+" : "-";
+
         <!-- ChooseFromFour mode -->
         <form method="post" asp-page-handler="SelectChoice" data-submitted-health="@(Model.FinancialState?.FinancialHealth ?? "Healthy")" data-submitted-available="@(Model.FinancialState?.Available.ToString("N0") ?? "0")">
             <div class="rd-choice-grid">
@@ -822,9 +840,9 @@
                             <div class="rd-card-body">
                                 <div class="rd-card-title">@card.Title</div>
                                 <p class="rd-card-desc">@card.Description</p>
-                                <div class="rd-card-amount neg">
+                                <div class="rd-card-amount @amtClass">
                                     <span class="rd-card-amount-label">Monthly Impact</span>
-                                    <span class="rd-card-amount-value">-$@cardAmt.ToString("N0") / mo</span>
+                                    <span class="rd-card-amount-value">@amtPrefix$@cardAmt.ToString("N0") / mo</span>
                                 </div>
                                 <button type="submit" class="rd-select-btn"
                                         name="chosenCardId" value="@card.CardId"
@@ -901,28 +919,28 @@
         <!-- Reveal phase (revealed after suspense) -->
         <div id="gc-card" style="border: 2px solid @borderColor;">
             <div style="
-                padding: 16px 20px;
-                background: @headerColor;
-                position: relative;
-                overflow: hidden;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 62px;
-                flex-shrink: 0;">
+                            padding: 16px 20px;
+                            background: @headerColor;
+                            position: relative;
+                            overflow: hidden;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 62px;
+                            flex-shrink: 0;">
                 <div style="
-                    position: absolute;
-                    inset: 0;
-                    background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px);"></div>
+                                position: absolute;
+                                inset: 0;
+                                background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px);"></div>
                 <span style="
-                    font-size: 1.45rem;
-                    font-weight: 900;
-                    letter-spacing: 0.12em;
-                    color: #fff;
-                    text-transform: uppercase;
-                    position: relative;
-                    z-index: 2;
-                    text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
+                                font-size: 1.45rem;
+                                font-weight: 900;
+                                letter-spacing: 0.12em;
+                                color: #fff;
+                                text-transform: uppercase;
+                                position: relative;
+                                z-index: 2;
+                                text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
             </div>
 
             <div style="padding: 16px 20px 18px; background: #fff; flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; z-index: 2; font-family: 'DM Sans', sans-serif;">
@@ -941,7 +959,7 @@
 
                 <hr style="border: none; border-top: 1.5px solid @borderColor; margin: 8px 0 12px;" />
 
-                <button onclick="document.getElementById('gc-overlay').style.display='none'" style="display: block; width: 100%; padding: 13px; background: @accentColor; color: #fff; border: none; border-radius: 999px; font-size: 0.92rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-family: 'DM Sans', sans-serif; margin: 0;">
+                <button onclick="document.getElementById('gc-overlay').remove()" style="display: block; width: 100%; padding: 13px; background: @accentColor; color: #fff; border: none; border-radius: 999px; font-size: 0.92rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.15); font-family: 'DM Sans', sans-serif; margin: 0;">
                     Continue
                 </button>
             </div>
@@ -961,7 +979,7 @@
         })();
     </script>
 }
-  
+
 <script>
     // Shared flag used by this page and the poller to avoid reloads during UI transitions
     window.pollActive = window.pollActive || false;

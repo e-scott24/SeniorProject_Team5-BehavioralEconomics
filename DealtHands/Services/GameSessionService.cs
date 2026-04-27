@@ -37,7 +37,7 @@ namespace DealtHands.Services
         /// Creates a new game session hosted by the specified educator/user.
         /// </summary>
         /// <param name="hostUserId">The UserId of the educator hosting this session</param>
-        /// <param name="gameId">The GameId corresponding to the selected mode (1 = RandomAssigned, 2 = ChooseFromFour)</param>
+        /// <param name="gameId">The GameId corresponding to the selected mode (1 = RandomAssigned, 2 = Structured)</param>
         /// <param name="sessionName">Optional friendly name for the session</param>
         /// <param name="difficulty">"Easy", "Medium", or "Hard" — affects game changer probability</param>
         /// <returns>The created GameSession with a unique JoinCode</returns>
@@ -383,7 +383,7 @@ namespace DealtHands.Services
                         assignedCard = availableCards[randomIndex];
                         break;
 
-                    case "ChooseFromFour":
+                    case "Structured":
                         // Placeholder — actual card set when player submits their choice
                         assignedCard = availableCards.First();
                         break;
@@ -542,7 +542,12 @@ namespace DealtHands.Services
             if (alreadyAssigned) return null;
 
             var user = await _context.Users.FindAsync(userId);
-            var session = await _context.GameSessions.FindAsync(gameSessionId);
+
+            // Use GetSessionByIdAsync (includes Game nav property) instead of FindAsync
+            // so we can read session.Game.Mode for Random vs Structured routing
+            var session = await _context.GameSessions
+                .Include(s => s.Game)
+                .FirstOrDefaultAsync(s => s.GameSessionId == gameSessionId);
 
             // Convert difficulty string to numeric level for filtering
             byte sessionDifficulty = (session?.Difficulty) switch
@@ -553,9 +558,17 @@ namespace DealtHands.Services
                 _ => 2
             };
 
-            // Load candidates from GameChanger table filtered by round type and difficulty
+            // Random mode (RandomAssigned): game changers can fire from any round category.
+            // The Requires* flags naturally prevent nonsensical events (e.g. car events before
+            // the player has chosen a car). As the player acquires more flags, the chaos grows.
+            //
+            // Structured mode: game changers only fire from the matching round category,
+            // keeping events narratively coherent with the current round.
+            bool isRandomMode = session?.Game?.Mode == "RandomAssigned";
+
+            // Load candidates: skip RoundType filter for Random mode
             var candidates = await _context.GameChangers
-                .Where(g => g.RoundType == roundType
+                .Where(g => (isRandomMode || g.RoundType == roundType)
                          && g.IsActive
                          && g.DifficultyLevel <= sessionDifficulty)
                 .ToListAsync();

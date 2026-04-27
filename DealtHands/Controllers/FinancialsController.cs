@@ -1,6 +1,6 @@
 ﻿/*  Name: Jason Black
    Date: 3/4/2026
-   Last Update: 4/19/2026
+   Last Update: 4/26/2026
 
    Temporary API controller that serves the player's financial starting state
    to the budget calculator via GET /api/financials.
@@ -77,7 +77,7 @@ namespace DealtHands.Controllers
                     monthlyIncome = state.MonthlyIncome,
                     checkingBalance = state.Available,
                     totalDebt = 0, // V2 schema does not track total debt separately
-                    emergencyFundSaved = state.Available
+                    emergencyFundSaved = 0
                 });
             }
 
