@@ -57,7 +57,8 @@ namespace DealtHands.Pages
             if (Session.Status == "Paused")
                 return RedirectToPage("/JoinSession");
 
-            // Load pending game changer from TempData if one was just assigned
+            // Always consume TempData immediately so stale messages never survive a round transition
+            var pendingWaitingMessage = TempData["WaitingMessage"] as string;
             if (TempData["PendingGameChangerId"] is string gcIdStr && int.TryParse(gcIdStr, out int gcId))
                 PendingGameChanger = await _gameSessionService.GetGameChangerByIdAsync(gcId);
 
@@ -92,7 +93,7 @@ namespace DealtHands.Pages
                 Cards = await _gameSessionService.GetChoiceCardsForRoundAsync(CurrentRound.RoundType);
 
             FinancialState = await _gameSessionService.GetPlayerFinancialStateAsync(userId, gameSessionId);
-            WaitingMessage = TempData["WaitingMessage"] as string;
+            WaitingMessage = pendingWaitingMessage;
 
             return Page();
         }
@@ -164,7 +165,6 @@ namespace DealtHands.Pages
                 }
             }
 
-            TempData["WaitingMessage"] = "Choice submitted! Waiting for the educator to advance to the next round...";
             return RedirectToPage("/Round");
         }
 

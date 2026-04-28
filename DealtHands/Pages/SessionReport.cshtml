@@ -8,9 +8,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h2>Session Report: @Model.Session?.Name</h2>
         <div>
-            <button class="btn btn-success me-2" onclick="downloadPDF()">
+            <a href="/SessionReport?handler=DownloadPdf&sessionId=@Model.Session?.GameSessionId"
+               class="btn btn-success me-2">
                 Download as PDF
-            </button>
+            </a>
             <a href="/EducatorDashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>
@@ -128,7 +129,13 @@
                             {
                                 <tr>
                                     <td>@result.Username</td>
-                                    <td>@result.CardTitle</td>
+                                    <td>
+                                        @result.CardTitle
+                                        @if (result.IsGameChanger)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">Game Changer</span>
+                                        }
+                                    </td>
                                     <td class="@(result.SubmittedAmount >= 0 ? "text-success" : "text-danger")">
                                         @(result.SubmittedAmount >= 0 ? "+" : "")$@result.SubmittedAmount?.ToString("N2")
                                     </td>
@@ -145,59 +152,3 @@
     </div>
 </div>
 
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        async function downloadPDF() {
-            const element = document.getElementById('session-report-content');
-
-            // Hide no-print elements and show print-only
-            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.print-only').forEach(el => el.style.display = 'block');
-
-            try {
-                // Capture the element as canvas
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
-                });
-
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const imgWidth = 210; // A4 width in mm
-                const pageHeight = 297; // A4 height in mm
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
-
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                // Add new pages if content is longer than one page
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                pdf.save('Session_Report_@(Model.Session?.JoinCode).pdf');
-            } catch (error) {
-                console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
-            } finally {
-                // Restore visibility
-                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
-                document.querySelectorAll('.print-only').forEach(el => el.style.display = 'none');
-            }
-        }
-    </script>
-}

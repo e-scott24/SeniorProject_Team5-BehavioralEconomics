@@ -28,7 +28,9 @@ namespace DealtHands.Services
         /// <returns>The created User object, or null if username/email already exists</returns>
         public async Task<User?> RegisterEducatorAsync(string username, string email, string password)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == username || u.Email == email))
+            if (await _context.Users.AnyAsync(u =>
+                u.Username.ToLower() == username.ToLower() ||
+                u.Email.ToLower() == email.ToLower()))
                 return null;
 
             var user = new User
@@ -54,7 +56,7 @@ namespace DealtHands.Services
         public async Task<User?> AuthenticateEducatorAsync(string email, string password)
         {
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower() && u.IsActive);
 
             if (user == null || user.PasswordHash == null)
                 return null;
@@ -98,31 +100,33 @@ namespace DealtHands.Services
         /// <returns>User object for the student</returns>
         public async Task<User> CreateOrGetStudentAsync(string username)
         {
-            var baseUsername = SanitizeUsername(username);
-            var finalUsername = baseUsername;
-            int counter = 1;
-
-            while (await _context.Users.AnyAsync(u => u.Username == finalUsername))
+            int playerCode;
+            do
             {
-                finalUsername = $"{baseUsername}{counter}";
-                counter++;
-            }
-
-            var email = $"{finalUsername.ToLower()}@student.dealthands.local";
+                playerCode = Random.Shared.Next(100000, 1000000);
+            } while (await _context.Users.AnyAsync(u => u.PlayerCode == playerCode));
 
             var student = new User
             {
-                Username = finalUsername,
-                Email = email,
-                PasswordHash = null, // Students don't have passwords
+                Username = SanitizeUsername(username),
+                Email = $"student_{Guid.NewGuid():N}@student.local",
+                PasswordHash = null,
                 CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                IsEducator = false,
+                PlayerCode = playerCode
             };
 
             _context.Users.Add(student);
             await _context.SaveChangesAsync();
 
             return student;
+        }
+
+        public async Task<User?> GetUserByPlayerCodeAsync(int playerCode)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.PlayerCode == playerCode && !u.IsEducator);
         }
 
         /// <summary>

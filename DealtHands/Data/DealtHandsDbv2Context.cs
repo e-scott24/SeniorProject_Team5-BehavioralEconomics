@@ -287,7 +287,9 @@ public partial class DealtHandsDbv2Context : DbContext
 
             entity.ToTable("User");
 
-            entity.HasIndex(e => e.Username, "UQ__User__536C85E469253162").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ_User_Username_Educator")
+                .IsUnique()
+                .HasFilter("[IsEducator] = 1");
 
             entity.HasIndex(e => e.Email, "UQ__User__A9D105341A37EEF6").IsUnique();
 
@@ -321,6 +323,8 @@ public partial class DealtHandsDbv2Context : DbContext
             entity.Property(e => e.IsMarried).HasDefaultValue(false);
             entity.Property(e => e.HasChildren).HasDefaultValue(false);
             entity.Property(e => e.HasJob).HasDefaultValue(true);
+
+            entity.Property(e => e.PlayerCode).IsRequired(false);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,8 +1,9 @@
 using DealtHands.Data;
 using DealtHands.Services;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 
-// This is the Program.cs file
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
