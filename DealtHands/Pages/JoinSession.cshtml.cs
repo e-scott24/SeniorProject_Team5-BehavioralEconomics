@@ -56,26 +56,24 @@ namespace DealtHands.Pages
                 return Page();
             }
 
-            // Returning player — PlayerCode is their UserId
+            // Returning player — PlayerCode is their 6-digit player code
             if (!string.IsNullOrEmpty(PlayerCode))
             {
-                if (!long.TryParse(PlayerCode, out long returningUserId))
+                if (!int.TryParse(PlayerCode, out int code))
                 {
                     ErrorMessage = "Invalid player code.";
                     return Page();
                 }
 
-                var returningUser = await _userService.GetUserByIdAsync(returningUserId);
+                var returningUser = await _userService.GetUserByPlayerCodeAsync(code);
                 if (returningUser == null)
                 {
                     ErrorMessage = "Player code not found.";
                     return Page();
                 }
 
-                // Use authentication service to set student session
-                _authService.SetStudentSession(returningUserId, returningUser.Username, session.GameSessionId);
-
-                _sessionTracker.AddPlayer(session.GameSessionId, returningUserId);
+                _authService.SetStudentSession(returningUser.UserId, returningUser.Username, session.GameSessionId);
+                _sessionTracker.AddPlayer(session.GameSessionId, returningUser.UserId);
 
                 return RedirectToPage("/Lobby", new { sessionCode = SessionCode });
             }

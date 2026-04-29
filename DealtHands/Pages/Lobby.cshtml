@@ -50,6 +50,10 @@
                             <div class="card">
                                 <div class="card-body text-center py-2">
                                     <p class="mb-0 fw-bold">@player.Username</p>
+                                    @if (Model.IsEducator)
+                                    {
+                                        <small class="text-muted">Code: @player.PlayerCode</small>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -76,7 +80,7 @@
                     @if (Model.Player != null)
                     {
                         <div class="alert alert-warning mt-3">
-                            <h5 class="mb-0">Your Player Code: <strong>@Model.Player.UserId</strong></h5>
+                            <h5 class="mb-0">Your Player Code: <strong>@Model.Player.PlayerCode</strong></h5>
                             <small>Save this code! You'll need it to rejoin if disconnected.</small>
                         </div>
                     }
@@ -105,6 +109,7 @@
                                     <div class="card">
                                         <div class="card-body text-center py-2">
                                             <p class="mb-0 fw-bold">@player.Username</p>
+                                            <small class="text-muted">Code: @player.PlayerCode</small>
                                         </div>
                                     </div>
                                 </div>
@@ -129,6 +134,13 @@
                 }
                 else
                 {
+                    @if (Model.Player != null)
+                    {
+                        <div class="alert alert-warning mt-3">
+                            <h5 class="mb-0">Your Player Code: <strong>@Model.Player.PlayerCode</strong></h5>
+                            <small>You'll need this code to rejoin when the session resumes.</small>
+                        </div>
+                    }
                     <div class="alert alert-info mt-3">
                         Waiting for the educator to resume the session...
                     </div>
@@ -175,7 +187,7 @@
                                     <button type="submit" id="closeRoundBtn"
                                             class="btn btn-warning btn-lg"
                                             asp-page-handler="CloseRound"
-                                            disabled>
+                                            onclick="return confirmCloseRound(this)">
                                         Close Round &amp; Open Next
                                     </button>
                                     <button type="submit" class="btn btn-outline-secondary"

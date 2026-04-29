@@ -36,6 +36,8 @@ public partial class User
 
     public bool HasJob { get; set; }
 
+    public int? PlayerCode { get; set; }
+
     public virtual ICollection<GameSession> GameSessions { get; set; } = new List<GameSession>();
 
     public virtual ICollection<Ugc> Ugcs { get; set; } = new List<Ugc>();

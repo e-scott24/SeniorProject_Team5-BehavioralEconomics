@@ -160,6 +160,8 @@ namespace DealtHands.Services
 
         /// <summary>
         /// Opens a new round in the session and assigns cards to all connected players.
+        /// The GameRound row and all UGC rows are committed in a single transaction so
+        /// concurrent requests cannot see the round as open before cards are assigned.
         /// </summary>
         public async Task<GameRound> OpenRoundAsync(long gameSessionId, List<long> connectedUserIds)
         {
@@ -173,27 +175,37 @@ namespace DealtHands.Services
 
             string roundType = ROUND_TYPES[roundNumber - 1];
 
-            var round = new GameRound
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                GameSessionId = gameSessionId,
-                RoundNumber = roundNumber,
-                RoundType = roundType,
-                Status = "Open",
-                OpenedAt = DateTime.UtcNow,
-                IsActive = true
-            };
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var round = new GameRound
+                    {
+                        GameSessionId = gameSessionId,
+                        RoundNumber = roundNumber,
+                        RoundType = roundType,
+                        Status = "Open",
+                        OpenedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
 
-            // Save the new round before we add UGC rows (we need the generated GameRoundId)
-            _context.GameRounds.Add(round);
-            await _context.SaveChangesAsync();
+                    _context.GameRounds.Add(round);
+                    await _context.SaveChangesAsync();
 
-            // Assign cards to all connected players (method will add Ugc entities)
-            await AssignCardsToPlayersAsync(round.GameRoundId, gameSessionId, roundType, connectedUserIds);
+                    await AssignCardsToPlayersAsync(round.GameRoundId, gameSessionId, roundType, connectedUserIds);
+                    await _context.SaveChangesAsync();
 
-            // Save UGCs from the assignment
-            await _context.SaveChangesAsync();
-
-            return round;
+                    await transaction.CommitAsync();
+                    return round;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
         }
 
         /// <summary>
@@ -779,7 +791,7 @@ namespace DealtHands.Services
                     UserId = g.Key,
                     Username = g.First().User.Username,
                     CurrentScore = g.First().RunningTotal ?? 0,
-                    CardsSubmitted = g.Count()
+                    CardsSubmitted = g.Count(u => u.CardId != null)
                 })
                 .OrderByDescending(l => l.CurrentScore)
                 .ToList();
@@ -821,7 +833,8 @@ namespace DealtHands.Services
                 CorrectAmount = u.Card?.MonthlyAmount ?? u.GameChanger?.MonthlyAmount ?? 0,
                 SubmittedAmount = u.SubmittedAmount,
                 RunningTotal = u.RunningTotal,
-                IsSubmitted = u.SubmittedAt != null
+                IsSubmitted = u.SubmittedAt != null,
+                IsGameChanger = u.GameChangerId != null
             })
             .OrderByDescending(r => r.RunningTotal)
             .ToList();
@@ -906,6 +919,7 @@ namespace DealtHands.Services
         public decimal? SubmittedAmount { get; set; }
         public decimal? RunningTotal { get; set; }
         public bool IsSubmitted { get; set; }
+        public bool IsGameChanger { get; set; }
     }
 
     public class PlayerFinancialState
