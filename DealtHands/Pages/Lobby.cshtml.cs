@@ -87,11 +87,11 @@ namespace DealtHands.Pages
 
             _authService.SetSessionCode(sessionCode);
 
-            await _gameSessionService.StartSessionAsync(session.GameSessionId);
-
             var connectedUserIds = _sessionTracker.GetPlayers(session.GameSessionId);
             if (connectedUserIds.Any())
                 await _gameSessionService.OpenRoundAsync(session.GameSessionId, connectedUserIds);
+
+            await _gameSessionService.StartSessionAsync(session.GameSessionId);
 
             return RedirectToPage("/Lobby", new { sessionCode = sessionCode });
         }
@@ -196,7 +196,7 @@ namespace DealtHands.Pages
             {
                 var user = await _userService.GetUserByIdAsync(pid);
                 if (user != null)
-                    players.Add(new { Name = user.Username, Id = user.UserId });
+                    players.Add(new { Name = user.Username, Id = user.PlayerCode });
             }
             return new JsonResult(players);
         }
@@ -229,7 +229,7 @@ namespace DealtHands.Pages
             if (round == null)
                 return new JsonResult(new { roundOpen = false });
 
-            // CardId != null identifies RoundCard UGC rows — GameChanger rows have CardId = null
+            // CardId != null identifies RoundCard UGC rows ï¿½ GameChanger rows have CardId = null
             var totalAssigned = await _context.Ugcs
                 .CountAsync(u => u.GameRoundId == round.GameRoundId && u.CardId != null);
 

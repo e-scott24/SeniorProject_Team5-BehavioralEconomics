@@ -37,7 +37,11 @@ async function updateRoundStatus() {
             bar.textContent = `${pct}%`;
         }
 
-        if (btn) btn.disabled = !status.allSubmitted;
+        if (btn) {
+            btn.dataset.allSubmitted = status.allSubmitted;
+            btn.dataset.submitted = status.submitted;
+            btn.dataset.total = status.total;
+        }
 
     } catch (err) {
         console.error('Error fetching round status:', err);
@@ -60,10 +64,14 @@ async function updatePlayers() {
             players.forEach(player => {
                 const col = document.createElement('div');
                 col.className = 'col-md-2 mb-3';
+                const codeLine = isEducator
+                    ? `<small class="text-muted">Code: ${player.id}</small>`
+                    : '';
                 col.innerHTML = `
                     <div class="card">
                         <div class="card-body text-center py-2">
                             <p class="mb-0 fw-bold">${player.name}</p>
+                            ${codeLine}
                         </div>
                     </div>`;
                 container.appendChild(col);
@@ -106,6 +114,13 @@ async function checkSessionStatus() {
     } catch (err) {
         console.error('Error checking session status:', err);
     }
+}
+
+function confirmCloseRound(btn) {
+    if (btn.dataset.allSubmitted === 'true') return true;
+    const submitted = btn.dataset.submitted ?? '?';
+    const total = btn.dataset.total ?? '?';
+    return confirm(`Only ${submitted} of ${total} players have submitted. Close the round anyway?`);
 }
 
 // ─── POLL LOOP ────────────────────────────────────────────────────────────────

@@ -139,6 +139,7 @@
                     <!-- Round-by-Round Breakdown (always visible for PDF) -->
                     <div class="mt-4" id="detailed-report-section">
                         <h5 class="mb-3">Round-by-Round Breakdown</h5>
+                        <div class="table-responsive">
                         <table class="table table-sm table-bordered">
                             <thead>
                                 <tr>
@@ -172,12 +173,13 @@
                                 }
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
-                    <div class="d-grid gap-2 mt-4 no-print">
-                        <button class="btn btn-success btn-lg" onclick="downloadPDF()">
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="/Results?handler=DownloadPdf" class="btn btn-success btn-lg">
                             Download Report as PDF
-                        </button>
+                        </a>
                         <a href="/JoinSession" class="btn btn-primary btn-lg">Play Again</a>
                     </div>
                 </div>
@@ -186,57 +188,3 @@
     </div>
 </div>
 
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        async function downloadPDF() {
-            const element = document.getElementById('results-content');
-
-            // Hide the buttons before generating PDF
-            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-
-            try {
-                // Capture the element as canvas
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
-                });
-
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const imgWidth = 210; // A4 width in mm
-                const pageHeight = 297; // A4 height in mm
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
-
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                // Add new pages if content is longer than one page
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                pdf.save('DealtHands_Game_Results.pdf');
-            } catch (error) {
-                console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
-            } finally {
-                // Show buttons again
-                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
-            }
-        }
-    </script>
-}

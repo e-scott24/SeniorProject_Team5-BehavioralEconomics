@@ -30,6 +30,17 @@ namespace DealtHands.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
+            if (string.IsNullOrWhiteSpace(Password)
+                || Password.Length < 8
+                || !Password.Any(char.IsLower)
+                || !Password.Any(char.IsUpper)
+                || !Password.Any(char.IsDigit)
+                || !Password.Any(c => !char.IsLetterOrDigit(c)))
+            {
+                ErrorMessage = "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.";
+                return Page();
+            }
+
             try
             {
                 var user = await _userService.RegisterEducatorAsync(Name, Email, Password);

@@ -1,7 +1,9 @@
 using DealtHands.ModelsV2;
+using DealtHands.Reports;
 using DealtHands.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using QuestPDF.Fluent;
 
 namespace DealtHands.Pages
 {
@@ -68,6 +70,39 @@ namespace DealtHands.Pages
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnGetDownloadPdfAsync(long sessionId)
+        {
+            if (!_authService.IsEducator || !_authService.UserId.HasValue)
+                return RedirectToPage("/Login");
+
+            Session = await _gameSessionService.GetSessionByIdAsync(sessionId);
+            if (Session == null || Session.HostUserId != _authService.UserId.Value)
+                return RedirectToPage("/EducatorDashboard");
+
+            Leaderboard = await _gameSessionService.GetLeaderboardAsync(sessionId);
+            foreach (var entry in Leaderboard)
+            {
+                var state = await _gameSessionService.GetPlayerFinancialStateAsync(entry.UserId, sessionId);
+                PlayerStates.Add(new PlayerStateInfo { UserId = entry.UserId, FinancialHealth = state.FinancialHealth });
+            }
+
+            var rounds = await _gameSessionService.GetSessionRoundsAsync(sessionId);
+            foreach (var round in rounds)
+            {
+                var results = await _gameSessionService.GetRoundResultsAsync(round.GameRoundId);
+                RoundSummaries.Add(new RoundSummary
+                {
+                    RoundNumber = round.RoundNumber,
+                    RoundType = round.RoundType,
+                    Results = results
+                });
+            }
+
+            var document = new SessionReportDocument(Session, Leaderboard, RoundSummaries, PlayerStates);
+            var pdf = document.GeneratePdf();
+            return File(pdf, "application/pdf", $"Session_Report_{Session.JoinCode}.pdf");
         }
     }
 
