@@ -682,26 +682,24 @@
 
         var income = (double)Model.FinancialState.MonthlyIncome;
         var expenses = (double)Model.FinancialState.MonthlyExpenses;
-        var bankBalance = (double)Model.FinancialState.GameChangerBalance;
-        var totalResources = income + Math.Max(0.0, bankBalance);
-        var surplus = totalResources - expenses;
+        var surplus = income - expenses;
 
         double expensesPct = 0;
         double surplusPct = 0;
         double deficitPct = 0;
-        bool hasResources = totalResources > 0;
-        bool isOverspending = expenses > totalResources;
+        bool hasIncome = income > 0;
+        bool isOverspending = expenses > income;
 
-        if (hasResources)
+        if (hasIncome)
         {
             if (!isOverspending)
             {
-                expensesPct = (expenses / totalResources) * 100.0;
+                expensesPct = (expenses / income) * 100.0;
                 surplusPct = 100.0 - expensesPct;
             }
             else
             {
-                expensesPct = (totalResources / expenses) * 100.0;
+                expensesPct = (income / expenses) * 100.0;
                 deficitPct = 100.0 - expensesPct;
             }
         }
@@ -719,7 +717,7 @@
             </div>
 
             <div class="rd-bar-wrap" title="Your monthly income broken down by expenses and surplus">
-                @if (!hasResources)
+                @if (!hasIncome)
                 {
                     <div class="rd-bar-segment" style="width: 100%; background: var(--rd-cream); color: var(--rd-ink); font-weight: 500;">
                         No income yet — choose a career to begin
@@ -766,10 +764,6 @@
                 else
                 {
                     <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:var(--rd-green);"></span>Surplus @(surplus >= 0 ? "+" : "")$@surplus.ToString("N0")</span>
-                }
-                @if (Math.Abs(bankBalance) >= 1)
-                {
-                    <span class="rd-bar-legend-item"><span class="rd-bar-swatch" style="background:@(bankBalance >= 0 ? "var(--rd-blue)" : "var(--rd-yellow)");"></span>Bank Balance @(bankBalance >= 0 ? "+" : "")$@bankBalance.ToString("N0")</span>
                 }
             </div>
 
@@ -923,28 +917,28 @@
         <!-- Reveal phase (revealed after suspense) -->
         <div id="gc-card" style="border: 2px solid @borderColor;">
             <div style="
-                            padding: 16px 20px;
-                            background: @headerColor;
-                            position: relative;
-                            overflow: hidden;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            min-height: 62px;
-                            flex-shrink: 0;">
-                <div style="
-                                position: absolute;
-                                inset: 0;
-                                background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px);"></div>
-                <span style="
-                                font-size: 1.45rem;
-                                font-weight: 900;
-                                letter-spacing: 0.12em;
-                                color: #fff;
-                                text-transform: uppercase;
+                                padding: 16px 20px;
+                                background: @headerColor;
                                 position: relative;
-                                z-index: 2;
-                                text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
+                                overflow: hidden;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 62px;
+                                flex-shrink: 0;">
+                <div style="
+                                    position: absolute;
+                                    inset: 0;
+                                    background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 16px);"></div>
+                <span style="
+                                    font-size: 1.45rem;
+                                    font-weight: 900;
+                                    letter-spacing: 0.12em;
+                                    color: #fff;
+                                    text-transform: uppercase;
+                                    position: relative;
+                                    z-index: 2;
+                                    text-shadow: 0 1px 3px rgba(0,0,0,0.18);">Game Changer</span>
             </div>
 
             <div style="padding: 16px 20px 18px; background: #fff; flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; z-index: 2; font-family: 'DM Sans', sans-serif;">
