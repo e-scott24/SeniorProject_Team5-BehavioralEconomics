@@ -29,7 +29,7 @@ Difficulty levels:
     Income/Expenses information:
     hint = smaller text under the label for extra guidance
     tip = tooltip text that appears when hovering over the "?" icon next to the label, meant for more in-depth advice
-    pctLabel = the recommended percentage range shown in the label (e.g. "10–15%")
+    pctLabel = the recommended percentage range shown in the label (e.g. "10-15%")
 */
 
 

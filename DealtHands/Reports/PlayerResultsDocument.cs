@@ -48,7 +48,7 @@ namespace DealtHands.Reports
 
                 page.Content().Column(col =>
                 {
-                    // ── Financial Summary ────────────────────────────────────────────
+                    // -- Financial Summary -----------------------------------------------
                     col.Item().PaddingTop(12).Text("Financial Summary").FontSize(13).Bold();
 
                     col.Item().PaddingTop(6).Table(table =>
@@ -91,7 +91,7 @@ namespace DealtHands.Reports
                             .FontSize(11).Bold();
                     });
 
-                    // ── Ranking ──────────────────────────────────────────────────────
+                    // -- Ranking ----------------------------------------------------------
                     if (_totalPlayers > 1 && _playerRank > 0)
                     {
                         col.Item().PaddingTop(16).Text("Class Ranking").FontSize(13).Bold();
@@ -109,7 +109,7 @@ namespace DealtHands.Reports
                             });
                     }
 
-                    // ── Round-by-Round Breakdown ─────────────────────────────────────
+                    // -- Round-by-Round Breakdown -----------------------------------------
                     col.Item().PaddingTop(16).Text("Round-by-Round Breakdown").FontSize(13).Bold();
 
                     col.Item().PaddingTop(6).Table(table =>

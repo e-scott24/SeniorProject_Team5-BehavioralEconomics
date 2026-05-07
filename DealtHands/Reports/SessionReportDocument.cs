@@ -53,7 +53,7 @@ namespace DealtHands.Reports
 
                 page.Content().Column(col =>
                 {
-                    // ── Final Leaderboard ────────────────────────────────────────────
+                    // -- Final Leaderboard -----------------------------------------------
                     col.Item().PaddingTop(12)
                         .Text("Final Leaderboard")
                         .FontSize(13).Bold();
@@ -102,7 +102,7 @@ namespace DealtHands.Reports
                         }
                     });
 
-                    // ── Round-by-Round Summary ───────────────────────────────────────
+                    // -- Round-by-Round Summary -------------------------------------------
                     foreach (var round in _roundSummaries.OrderBy(r => r.RoundNumber))
                     {
                         col.Item().PaddingTop(18)

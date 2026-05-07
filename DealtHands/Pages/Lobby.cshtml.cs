@@ -229,7 +229,7 @@ namespace DealtHands.Pages
             if (round == null)
                 return new JsonResult(new { roundOpen = false });
 
-            // CardId != null identifies RoundCard UGC rows � GameChanger rows have CardId = null
+            // CardId != null identifies RoundCard UGC rows - GameChanger rows have CardId = null
             var totalAssigned = await _context.Ugcs
                 .CountAsync(u => u.GameRoundId == round.GameRoundId && u.CardId != null);
 

@@ -1,7 +1,7 @@
 ﻿const sessionCode = document.getElementById('sessionCode').value;
 const isEducator = document.getElementById('isEducator').value === 'true';
 
-// ─── EDUCATOR ONLY: poll round status and update control panel ────────────────
+// --- EDUCATOR ONLY: poll round status and update control panel ------------------------------
 
 async function updateRoundStatus() {
     if (!isEducator) return;
@@ -48,7 +48,7 @@ async function updateRoundStatus() {
     }
 }
 
-// ─── SHARED: update the player list display ───────────────────────────────────
+// --- SHARED: update the player list display ------------------------------
 
 async function updatePlayers() {
     try {
@@ -82,7 +82,7 @@ async function updatePlayers() {
     }
 }
 
-// ─── STUDENT ONLY: check if game started or session changed state ─────────────
+// ------ STUDENT ONLY: check if game started or session changed state ----------------
 
 async function checkSessionStatus() {
     if (isEducator) return; // Educators never get redirected from this page
@@ -123,7 +123,7 @@ function confirmCloseRound(btn) {
     return confirm(`Only ${submitted} of ${total} players have submitted. Close the round anyway?`);
 }
 
-// ─── POLL LOOP ────────────────────────────────────────────────────────────────
+// ---- POLL LOOP -----------------------------------------------------
 
 async function poll() {
     await updatePlayers();
